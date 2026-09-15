@@ -126,7 +126,22 @@
 `npm run build` 成功；预览下 `/collections/construction-gold?sort=price-low-high` 返回 200，SSR 输出含
 `class="filters"`、`product-card`、`sort-select`、`breadcrumb`、`collection-count`。
 
-## 10. 后台（Shopify Admin）前置依赖
+## 10. 已落地：P4 搜索
+
+| 文件 | 说明 |
+| --- | --- |
+| `app/lib/search-filters.ts` | 搜索分面工具：`parseSearchFilters` / `buildSearchQuery`（复合 Shopify 搜索语法：`vendor:` / `product_type:` / `tag:` / `available:`）；`toggleSearchFilterUrl` / `clearSearchFiltersUrl`；`parseSkuQuery` |
+| `app/routes/search.tsx`（+ `($locale)` 副本） | SKU 精确命中（`sku:VALUE` 查询，唯一匹配则 redirect）；loader 解析 URL 过滤并复合为搜索查询；从首屏结果统计可用品牌/类型；渲染分面栏（>20 结果时）；"Did you mean?" 占位 |
+| `app/components/SearchFormPredictive.tsx` | 增强：300ms debounce，≥3 字符才触发，避免空查询噪音 |
+| `app/components/SearchResultsPredictive.tsx` | 增强：按 Products / Categories / Pages / Articles 分组；产品项显示 vendor；空状态样式 |
+| `app/styles/app.css` | 搜索页样式：搜索框、分面栏、facet 下拉/开关、结果分组、预测搜索分组 |
+
+约束：搜索分面通过 Shopify 搜索语法（`vendor:` 等）实现，而非 `ProductFilter`（Storefront `search` 查询不支持 `filters` 参数）。所有过滤状态走 URL，保证可分享。
+
+验收：`codegen` + `typegen` + `tsc --noEmit` 无错误；`npm run lint` 0 error 0 warning；`npm run build` 成功；
+预览下 `/search?q=glass` 返回 200 且含产品卡与计数。
+
+## 11. 后台（Shopify Admin）前置依赖
 
 规格 §68：产品、集合、导航、客户、公司/公司地点、目录、Markets、Locations，
 以及 Metaobject 定义：`Hero`、`MegaMenuItem`、`Brand`、`Resource`、`TechnicalDocument`、`Location`。

@@ -1,10 +1,9 @@
-import {useLoaderData} from 'react-router';
+import {redirect, useLoaderData, useLocation, Link} from 'react-router';
 import type {Route} from './+types/search';
 import {getPaginationVariables, Analytics} from '@shopify/hydrogen';
 import {SearchForm} from '~/components/SearchForm';
 import {SearchResults} from '~/components/SearchResults';
 import {
-  type RegularSearchReturn,
   type PredictiveSearchReturn,
   getEmptyPredictiveSearchResult,
 } from '~/lib/search';
@@ -12,7 +11,16 @@ import type {
   RegularSearchQuery,
   PredictiveSearchQuery,
 } from 'storefrontapi.generated';
+import type {SearchFilters} from '~/lib/search-filters';
 import {b2bCacheOptions, getBuyerVariables} from '~/lib/b2b';
+import {
+  parseSearchFilters,
+  buildSearchQuery,
+  parseSkuQuery,
+  countSearchFilters,
+  toggleSearchFilterUrl,
+  clearSearchFiltersUrl,
+} from '~/lib/search-filters';
 
 export const meta: Route.MetaFunction = () => {
   return [{title: `Hydrogen | Search`}];
@@ -21,67 +29,341 @@ export const meta: Route.MetaFunction = () => {
 export async function loader({request, context}: Route.LoaderArgs) {
   const url = new URL(request.url);
   const isPredictive = url.searchParams.has('predictive');
-  const searchPromise: Promise<PredictiveSearchReturn | RegularSearchReturn> =
-    isPredictive
-      ? predictiveSearch({request, context})
-      : regularSearch({request, context});
 
-  searchPromise.catch((error: Error) => {
-    console.error(error);
-    return {term: '', result: null, error: error.message};
-  });
+  if (isPredictive) {
+    return predictiveSearch({request, context});
+  }
 
-  return await searchPromise;
+  return regularSearch({request, context});
 }
 
-/**
- * Renders the /search route
- */
 export default function SearchPage() {
-  const {type, term, result, error} = useLoaderData<typeof loader>();
-  if (type === 'predictive') return null;
+  const data = useLoaderData<typeof loader>();
+
+  if (data.type === 'predictive') return null;
+
+  const {term, result, error, filters, availableFilters, suggestions} =
+    data as Awaited<ReturnType<typeof regularSearch>>;
+  const applied = countSearchFilters(filters);
 
   return (
-    <div className="search">
-      <h1>Search</h1>
-      <SearchForm>
-        {({inputRef}) => (
-          <>
-            <input
-              defaultValue={term}
-              name="q"
-              placeholder="Search…"
-              ref={inputRef}
-              type="search"
-            />
-            &nbsp;
-            <button type="submit">Search</button>
-          </>
-        )}
-      </SearchForm>
-      {error && <p style={{color: 'red'}}>{error}</p>}
-      {!term || !result?.total ? (
-        <SearchResults.Empty />
-      ) : (
-        <SearchResults result={result} term={term}>
-          {({articles, pages, products, term}) => (
-            <div>
-              <SearchResults.Products products={products} term={term} />
-              <SearchResults.Pages pages={pages} term={term} />
-              <SearchResults.Articles articles={articles} term={term} />
+    <div className="search-page">
+      <div className="container-page">
+        <h1>Search</h1>
+
+        <SearchForm className="search-form">
+          {({inputRef}) => (
+            <div className="search-input-group">
+              <input
+                className="input search-input"
+                defaultValue={term}
+                name="q"
+                placeholder="Search by keyword or SKU…"
+                ref={inputRef}
+                type="search"
+              />
+              <button className="btn btn-primary" type="submit">
+                Search
+              </button>
             </div>
           )}
-        </SearchResults>
-      )}
-      <Analytics.SearchView data={{searchTerm: term, searchResults: result}} />
+        </SearchForm>
+
+        {error && <p className="search-error">{error}</p>}
+
+        {!term || !result?.total ? (
+          <SearchResults.Empty />
+        ) : (
+          <>
+            {suggestions && suggestions.length > 0 && (
+              <div className="search-did-you-mean">
+                <span>Did you mean:</span>{' '}
+                {suggestions.map((suggestion: string, i: number) => (
+                  <span key={`suggestion-${suggestion}`}>
+                    {i > 0 && ', '}
+                    <Link
+                      className="link-brand"
+                      to={`/search?q=${encodeURIComponent(suggestion)}`}
+                    >
+                      {suggestion}
+                    </Link>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            <div className="search-toolbar">
+              <p className="search-count">
+                {result.total} result{result.total === 1 ? '' : 's'} for{' '}
+                <q>{term}</q>
+              </p>
+            </div>
+
+            {result.items.products?.nodes?.length > 20 && (
+              <SearchFacets
+                filters={filters}
+                availableFilters={availableFilters}
+                applied={applied}
+              />
+            )}
+
+            <SearchResults result={result} term={term}>
+              {({articles, pages, products}) => (
+                <div className="search-results-layout">
+                  {products?.nodes?.length > 0 && (
+                    <section className="search-results-section">
+                      <h2 className="section-heading">
+                        <span>Products</span>
+                      </h2>
+                      <div className="products-grid">
+                        {products.nodes.map((product) => (
+                          <SearchProductCard
+                            key={product.id}
+                            product={product}
+                            term={term}
+                          />
+                        ))}
+                      </div>
+                    </section>
+                  )}
+
+                  {pages?.nodes?.length > 0 && (
+                    <section className="search-results-section">
+                      <h2 className="section-heading">
+                        <span>Pages</span>
+                      </h2>
+                      <ul className="search-results-list">
+                        {pages.nodes.map((page) => (
+                          <li key={page.id}>
+                            <Link
+                              prefetch="intent"
+                              to={`/pages/${page.handle}?q=${encodeURIComponent(term)}`}
+                            >
+                              {page.title}
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  )}
+
+                  {articles?.nodes?.length > 0 && (
+                    <section className="search-results-section">
+                      <h2 className="section-heading">
+                        <span>Articles</span>
+                      </h2>
+                      <ul className="search-results-list">
+                        {articles.nodes.map((article) => (
+                          <li key={article.id}>
+                            <Link
+                              prefetch="intent"
+                              to={`/blogs/${article.blog.handle}/${article.handle}?q=${encodeURIComponent(term)}`}
+                            >
+                              {article.title}
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  )}
+                </div>
+              )}
+            </SearchResults>
+          </>
+        )}
+
+        <Analytics.SearchView
+          data={{searchTerm: term, searchResults: result}}
+        />
+      </div>
     </div>
   );
 }
 
-/**
- * Regular search query and fragments
- * (adjust as needed)
- */
+function SearchProductCard({
+  product,
+  term,
+}: {
+  product: NonNullable<
+    RegularSearchQuery['products']
+  >['nodes'][number];
+  term: string;
+}) {
+  const variant = product.selectedOrFirstAvailableVariant;
+  const image = variant?.image;
+  const price = variant?.price;
+  const compareAt = variant?.compareAtPrice;
+
+  return (
+    <Link
+      className="product-card"
+      prefetch="intent"
+      to={`/products/${product.handle}?q=${encodeURIComponent(term)}`}
+    >
+      <div className="product-card-media">
+        {image && (
+          <img
+            alt={image.altText || product.title}
+            height={image.height ?? 300}
+            loading="lazy"
+            src={image.url}
+            width={image.width ?? 300}
+          />
+        )}
+      </div>
+      <div className="product-card-body">
+        {product.vendor && (
+          <p className="product-card-vendor">{product.vendor}</p>
+        )}
+        <h4 className="product-card-title">{product.title}</h4>
+        <p className="product-card-price">
+          {price && (
+            <>
+              <MoneyInline data={price} />
+              {compareAt && (
+                <s className="product-card-compare">
+                  <MoneyInline data={compareAt} />
+                </s>
+              )}
+            </>
+          )}
+        </p>
+      </div>
+    </Link>
+  );
+}
+
+function MoneyInline({data}: {data: {amount: string; currencyCode: string}}) {
+  return (
+    <span>
+      {data.currencyCode} {data.amount}
+    </span>
+  );
+}
+
+function SearchFacets({
+  filters,
+  availableFilters,
+  applied,
+}: {
+  filters: ReturnType<typeof parseSearchFilters>;
+  availableFilters: {
+    brands: string[];
+    types: string[];
+  };
+  applied: number;
+}) {
+  const location = useLocation();
+  const url = new URL(
+    `${location.pathname}${location.search}`,
+    'https://storefront.local',
+  );
+
+  return (
+    <div className="search-facets">
+      <div className="search-facets-header">
+        <span className="search-facets-title">Refine results</span>
+        {applied > 0 && (
+          <Link className="search-facets-clear" to={clearSearchFiltersUrl(url)}>
+            Clear all ({applied})
+          </Link>
+        )}
+      </div>
+
+      <div className="search-facets-row">
+        {availableFilters.brands.length > 0 && (
+          <FacetDropdown
+            label="Brand"
+            options={availableFilters.brands}
+            param="brand"
+            selected={filters.brand}
+            url={url}
+          />
+        )}
+
+        {availableFilters.types.length > 0 && (
+          <FacetDropdown
+            label="Category"
+            options={availableFilters.types}
+            param="type"
+            selected={filters.type}
+            url={url}
+          />
+        )}
+
+        <FacetToggle
+          label="In stock only"
+          param="available"
+          selected={filters.available}
+          url={url}
+        />
+      </div>
+    </div>
+  );
+}
+
+function FacetDropdown({
+  label,
+  options,
+  param,
+  selected,
+  url,
+}: {
+  label: string;
+  options: string[];
+  param: string;
+  selected: string[];
+  url: URL;
+}) {
+  return (
+    <div className="facet-dropdown">
+      <label className="label">{label}</label>
+      <select
+        className="select"
+        onChange={(e) => {
+          const value = e.target.value;
+          window.location.href = toggleSearchFilterUrl(url, param, value);
+        }}
+        value={selected[0] ?? ''}
+      >
+        <option value="">All</option>
+        {options.map((opt) => (
+          <option key={opt} value={opt}>
+            {opt}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+function FacetToggle({
+  label,
+  param,
+  selected,
+  url,
+}: {
+  label: string;
+  param: string;
+  selected: boolean;
+  url: URL;
+}) {
+  const next = toggleSearchFilterUrl(url, param, '1');
+  const clear = clearSearchFiltersUrl(url);
+  return (
+    <Link
+      className={`facet-toggle${selected ? ' is-selected' : ''}`}
+      to={selected ? clear : next}
+    >
+      {label}
+    </Link>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Loader helpers                                                     */
+/* ------------------------------------------------------------------ */
+
 const SEARCH_PRODUCT_FRAGMENT = `#graphql
   fragment SearchProduct on Product {
     __typename
@@ -91,6 +373,7 @@ const SEARCH_PRODUCT_FRAGMENT = `#graphql
     title
     trackingParameters
     vendor
+    productType
     selectedOrFirstAvailableVariant(
       selectedOptions: []
       ignoreUnknownOptions: true
@@ -115,18 +398,14 @@ const SEARCH_PRODUCT_FRAGMENT = `#graphql
         name
         value
       }
-      product {
-        handle
-        title
-      }
     }
   }
 ` as const;
 
 const SEARCH_PAGE_FRAGMENT = `#graphql
   fragment SearchPage on Page {
-     __typename
-     handle
+    __typename
+    handle
     id
     title
     trackingParameters
@@ -140,6 +419,9 @@ const SEARCH_ARTICLE_FRAGMENT = `#graphql
     id
     title
     trackingParameters
+    blog {
+      handle
+    }
   }
 ` as const;
 
@@ -152,8 +434,22 @@ const PAGE_INFO_FRAGMENT = `#graphql
   }
 ` as const;
 
-// NOTE: https://shopify.dev/docs/api/storefront/latest/queries/search
-export const SEARCH_QUERY = `#graphql
+const SKU_SEARCH_QUERY = `#graphql
+  query SkuSearch(
+    $query: String!
+    $country: CountryCode
+    $language: LanguageCode
+    $buyer: BuyerInput
+  ) @inContext(country: $country, language: $language, buyer: $buyer) {
+    products(first: 2, query: $query) {
+      nodes {
+        handle
+      }
+    }
+  }
+` as const;
+
+const SEARCH_QUERY = `#graphql
   query RegularSearch(
     $country: CountryCode
     $endCursor: String
@@ -212,25 +508,34 @@ export const SEARCH_QUERY = `#graphql
   ${PAGE_INFO_FRAGMENT}
 ` as const;
 
-/**
- * Regular search fetcher
- */
 async function regularSearch({
   request,
   context,
-}: Pick<
-  Route.LoaderArgs,
-  'request' | 'context'
->): Promise<RegularSearchReturn> {
+}: Pick<Route.LoaderArgs, 'request' | 'context'>) {
   const {storefront} = context;
   const url = new URL(request.url);
-  const variables = getPaginationVariables(request, {pageBy: 8});
-  const term = String(url.searchParams.get('q') || '');
+  const baseTerm = String(url.searchParams.get('q') || '');
+  const filters = parseSearchFilters(url.searchParams);
 
   // @description Contextualize the query so B2B customers see their catalog
   const buyerVariables = await getBuyerVariables(context);
 
-  // Search articles, pages, and products for the `q` term
+  /* SKU exact hit ---------------------------------------------------- */
+  const sku = parseSkuQuery(baseTerm);
+  if (sku) {
+    const {products} = await storefront.query(SKU_SEARCH_QUERY, {
+      variables: {query: `sku:${sku}`, ...buyerVariables},
+      ...b2bCacheOptions(storefront, buyerVariables),
+    });
+    if (products?.nodes?.length === 1) {
+      throw redirect(`/products/${products.nodes[0].handle}`);
+    }
+  }
+
+  /* Regular search --------------------------------------------------- */
+  const variables = getPaginationVariables(request, {pageBy: 24});
+  const term = buildSearchQuery(baseTerm, filters);
+
   const {
     errors,
     ...items
@@ -253,13 +558,31 @@ async function regularSearch({
     ? errors.map(({message}: {message: string}) => message).join(', ')
     : undefined;
 
-  return {type: 'regular', term, error, result: {total, items}};
+  /* Derive available facets from the first page of products ---------- */
+  const productNodes = (items.products?.nodes ?? []) as Array<{
+    vendor?: string | null;
+    productType?: string | null;
+  }>;
+  const brands = [
+    ...new Set(productNodes.map((p) => p.vendor).filter(Boolean)),
+  ] as string[];
+  const types = [
+    ...new Set(productNodes.map((p) => p.productType).filter(Boolean)),
+  ] as string[];
+
+  return {
+    type: 'regular' as const,
+    term: baseTerm,
+    error,
+    result: {total, items},
+    filters,
+    availableFilters: {brands, types},
+    suggestions: [] as string[],
+  } as const;
 }
 
-/**
- * Predictive search query and fragments
- * (adjust as needed)
- */
+/* Predictive search -------------------------------------------------- */
+
 const PREDICTIVE_SEARCH_ARTICLE_FRAGMENT = `#graphql
   fragment PredictiveArticle on Article {
     __typename
@@ -311,6 +634,7 @@ const PREDICTIVE_SEARCH_PRODUCT_FRAGMENT = `#graphql
     id
     title
     handle
+    vendor
     trackingParameters
     selectedOrFirstAvailableVariant(
       selectedOptions: []
@@ -341,7 +665,6 @@ const PREDICTIVE_SEARCH_QUERY_FRAGMENT = `#graphql
   }
 ` as const;
 
-// NOTE: https://shopify.dev/docs/api/storefront/latest/queries/predictiveSearch
 const PREDICTIVE_SEARCH_QUERY = `#graphql
   query PredictiveSearch(
     $country: CountryCode
@@ -382,16 +705,10 @@ const PREDICTIVE_SEARCH_QUERY = `#graphql
   ${PREDICTIVE_SEARCH_QUERY_FRAGMENT}
 ` as const;
 
-/**
- * Predictive search fetcher
- */
 async function predictiveSearch({
   request,
   context,
-}: Pick<
-  Route.ActionArgs,
-  'request' | 'context'
->): Promise<PredictiveSearchReturn> {
+}: Pick<Route.ActionArgs, 'request' | 'context'>) {
   const {storefront} = context;
   const url = new URL(request.url);
   const term = String(url.searchParams.get('q') || '').trim();
@@ -403,14 +720,12 @@ async function predictiveSearch({
   // @description Contextualize the query so B2B customers see their catalog
   const buyerVariables = await getBuyerVariables(context);
 
-  // Predictively search articles, collections, pages, products, and queries (suggestions)
   const {
     predictiveSearch: items,
     errors,
   }: PredictiveSearchQuery & {errors?: Array<{message: string}>} =
     await storefront.query(PREDICTIVE_SEARCH_QUERY, {
       variables: {
-        // customize search options as needed
         limit,
         limitScope: 'EACH',
         term,

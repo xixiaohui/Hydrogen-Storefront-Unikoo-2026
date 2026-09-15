@@ -1229,7 +1229,13 @@ export type ProductQuery = {
 
 export type SearchProductFragment = {__typename: 'Product'} & Pick<
   StorefrontAPI.Product,
-  'handle' | 'id' | 'publishedAt' | 'title' | 'trackingParameters' | 'vendor'
+  | 'handle'
+  | 'id'
+  | 'publishedAt'
+  | 'title'
+  | 'trackingParameters'
+  | 'vendor'
+  | 'productType'
 > & {
     selectedOrFirstAvailableVariant?: StorefrontAPI.Maybe<
       Pick<StorefrontAPI.ProductVariant, 'id'> & {
@@ -1243,7 +1249,6 @@ export type SearchProductFragment = {__typename: 'Product'} & Pick<
         selectedOptions: Array<
           Pick<StorefrontAPI.SelectedOption, 'name' | 'value'>
         >;
-        product: Pick<StorefrontAPI.Product, 'handle' | 'title'>;
       }
     >;
   };
@@ -1256,12 +1261,23 @@ export type SearchPageFragment = {__typename: 'Page'} & Pick<
 export type SearchArticleFragment = {__typename: 'Article'} & Pick<
   StorefrontAPI.Article,
   'handle' | 'id' | 'title' | 'trackingParameters'
->;
+> & {blog: Pick<StorefrontAPI.Blog, 'handle'>};
 
 export type PageInfoFragmentFragment = Pick<
   StorefrontAPI.PageInfo,
   'hasNextPage' | 'hasPreviousPage' | 'startCursor' | 'endCursor'
 >;
+
+export type SkuSearchQueryVariables = StorefrontAPI.Exact<{
+  query: StorefrontAPI.Scalars['String']['input'];
+  country?: StorefrontAPI.InputMaybe<StorefrontAPI.CountryCode>;
+  language?: StorefrontAPI.InputMaybe<StorefrontAPI.LanguageCode>;
+  buyer?: StorefrontAPI.InputMaybe<StorefrontAPI.BuyerInput>;
+}>;
+
+export type SkuSearchQuery = {
+  products: {nodes: Array<Pick<StorefrontAPI.Product, 'handle'>>};
+};
 
 export type RegularSearchQueryVariables = StorefrontAPI.Exact<{
   country?: StorefrontAPI.InputMaybe<StorefrontAPI.CountryCode>;
@@ -1284,7 +1300,7 @@ export type RegularSearchQuery = {
       {__typename: 'Article'} & Pick<
         StorefrontAPI.Article,
         'handle' | 'id' | 'title' | 'trackingParameters'
-      >
+      > & {blog: Pick<StorefrontAPI.Blog, 'handle'>}
     >;
   };
   pages: {
@@ -1305,6 +1321,7 @@ export type RegularSearchQuery = {
         | 'title'
         | 'trackingParameters'
         | 'vendor'
+        | 'productType'
       > & {
           selectedOrFirstAvailableVariant?: StorefrontAPI.Maybe<
             Pick<StorefrontAPI.ProductVariant, 'id'> & {
@@ -1321,7 +1338,6 @@ export type RegularSearchQuery = {
               selectedOptions: Array<
                 Pick<StorefrontAPI.SelectedOption, 'name' | 'value'>
               >;
-              product: Pick<StorefrontAPI.Product, 'handle' | 'title'>;
             }
           >;
         }
@@ -1359,7 +1375,7 @@ export type PredictivePageFragment = {__typename: 'Page'} & Pick<
 
 export type PredictiveProductFragment = {__typename: 'Product'} & Pick<
   StorefrontAPI.Product,
-  'id' | 'title' | 'handle' | 'trackingParameters'
+  'id' | 'title' | 'handle' | 'vendor' | 'trackingParameters'
 > & {
     selectedOrFirstAvailableVariant?: StorefrontAPI.Maybe<
       Pick<StorefrontAPI.ProductVariant, 'id'> & {
@@ -1423,7 +1439,7 @@ export type PredictiveSearchQuery = {
     products: Array<
       {__typename: 'Product'} & Pick<
         StorefrontAPI.Product,
-        'id' | 'title' | 'handle' | 'trackingParameters'
+        'id' | 'title' | 'handle' | 'vendor' | 'trackingParameters'
       > & {
           selectedOrFirstAvailableVariant?: StorefrontAPI.Maybe<
             Pick<StorefrontAPI.ProductVariant, 'id'> & {
@@ -1504,11 +1520,15 @@ interface GeneratedQueryTypes {
     return: ProductQuery;
     variables: ProductQueryVariables;
   };
-  '#graphql\n  query RegularSearch(\n    $country: CountryCode\n    $endCursor: String\n    $first: Int\n    $language: LanguageCode\n    $last: Int\n    $term: String!\n    $startCursor: String\n    $buyer: BuyerInput\n  ) @inContext(country: $country, language: $language, buyer: $buyer) {\n    articles: search(\n      query: $term,\n      types: [ARTICLE],\n      first: $first,\n    ) {\n      nodes {\n        ...on Article {\n          ...SearchArticle\n        }\n      }\n    }\n    pages: search(\n      query: $term,\n      types: [PAGE],\n      first: $first,\n    ) {\n      nodes {\n        ...on Page {\n          ...SearchPage\n        }\n      }\n    }\n    products: search(\n      after: $endCursor,\n      before: $startCursor,\n      first: $first,\n      last: $last,\n      query: $term,\n      sortKey: RELEVANCE,\n      types: [PRODUCT],\n      unavailableProducts: HIDE,\n    ) {\n      nodes {\n        ...on Product {\n          ...SearchProduct\n        }\n      }\n      pageInfo {\n        ...PageInfoFragment\n      }\n    }\n  }\n  #graphql\n  fragment SearchProduct on Product {\n    __typename\n    handle\n    id\n    publishedAt\n    title\n    trackingParameters\n    vendor\n    selectedOrFirstAvailableVariant(\n      selectedOptions: []\n      ignoreUnknownOptions: true\n      caseInsensitiveMatch: true\n    ) {\n      id\n      image {\n        url\n        altText\n        width\n        height\n      }\n      price {\n        amount\n        currencyCode\n      }\n      compareAtPrice {\n        amount\n        currencyCode\n      }\n      selectedOptions {\n        name\n        value\n      }\n      product {\n        handle\n        title\n      }\n    }\n  }\n\n  #graphql\n  fragment SearchPage on Page {\n     __typename\n     handle\n    id\n    title\n    trackingParameters\n  }\n\n  #graphql\n  fragment SearchArticle on Article {\n    __typename\n    handle\n    id\n    title\n    trackingParameters\n  }\n\n  #graphql\n  fragment PageInfoFragment on PageInfo {\n    hasNextPage\n    hasPreviousPage\n    startCursor\n    endCursor\n  }\n\n': {
+  '#graphql\n  query SkuSearch(\n    $query: String!\n    $country: CountryCode\n    $language: LanguageCode\n    $buyer: BuyerInput\n  ) @inContext(country: $country, language: $language, buyer: $buyer) {\n    products(first: 2, query: $query) {\n      nodes {\n        handle\n      }\n    }\n  }\n': {
+    return: SkuSearchQuery;
+    variables: SkuSearchQueryVariables;
+  };
+  '#graphql\n  query RegularSearch(\n    $country: CountryCode\n    $endCursor: String\n    $first: Int\n    $language: LanguageCode\n    $last: Int\n    $term: String!\n    $startCursor: String\n    $buyer: BuyerInput\n  ) @inContext(country: $country, language: $language, buyer: $buyer) {\n    articles: search(\n      query: $term,\n      types: [ARTICLE],\n      first: $first,\n    ) {\n      nodes {\n        ...on Article {\n          ...SearchArticle\n        }\n      }\n    }\n    pages: search(\n      query: $term,\n      types: [PAGE],\n      first: $first,\n    ) {\n      nodes {\n        ...on Page {\n          ...SearchPage\n        }\n      }\n    }\n    products: search(\n      after: $endCursor,\n      before: $startCursor,\n      first: $first,\n      last: $last,\n      query: $term,\n      sortKey: RELEVANCE,\n      types: [PRODUCT],\n      unavailableProducts: HIDE,\n    ) {\n      nodes {\n        ...on Product {\n          ...SearchProduct\n        }\n      }\n      pageInfo {\n        ...PageInfoFragment\n      }\n    }\n  }\n  #graphql\n  fragment SearchProduct on Product {\n    __typename\n    handle\n    id\n    publishedAt\n    title\n    trackingParameters\n    vendor\n    productType\n    selectedOrFirstAvailableVariant(\n      selectedOptions: []\n      ignoreUnknownOptions: true\n      caseInsensitiveMatch: true\n    ) {\n      id\n      image {\n        url\n        altText\n        width\n        height\n      }\n      price {\n        amount\n        currencyCode\n      }\n      compareAtPrice {\n        amount\n        currencyCode\n      }\n      selectedOptions {\n        name\n        value\n      }\n    }\n  }\n\n  #graphql\n  fragment SearchPage on Page {\n    __typename\n    handle\n    id\n    title\n    trackingParameters\n  }\n\n  #graphql\n  fragment SearchArticle on Article {\n    __typename\n    handle\n    id\n    title\n    trackingParameters\n    blog {\n      handle\n    }\n  }\n\n  #graphql\n  fragment PageInfoFragment on PageInfo {\n    hasNextPage\n    hasPreviousPage\n    startCursor\n    endCursor\n  }\n\n': {
     return: RegularSearchQuery;
     variables: RegularSearchQueryVariables;
   };
-  '#graphql\n  query PredictiveSearch(\n    $country: CountryCode\n    $language: LanguageCode\n    $limit: Int!\n    $limitScope: PredictiveSearchLimitScope!\n    $term: String!\n    $types: [PredictiveSearchType!]\n    $buyer: BuyerInput\n  ) @inContext(country: $country, language: $language, buyer: $buyer) {\n    predictiveSearch(\n      limit: $limit,\n      limitScope: $limitScope,\n      query: $term,\n      types: $types,\n    ) {\n      articles {\n        ...PredictiveArticle\n      }\n      collections {\n        ...PredictiveCollection\n      }\n      pages {\n        ...PredictivePage\n      }\n      products {\n        ...PredictiveProduct\n      }\n      queries {\n        ...PredictiveQuery\n      }\n    }\n  }\n  #graphql\n  fragment PredictiveArticle on Article {\n    __typename\n    id\n    title\n    handle\n    blog {\n      handle\n    }\n    image {\n      url\n      altText\n      width\n      height\n    }\n    trackingParameters\n  }\n\n  #graphql\n  fragment PredictiveCollection on Collection {\n    __typename\n    id\n    title\n    handle\n    image {\n      url\n      altText\n      width\n      height\n    }\n    trackingParameters\n  }\n\n  #graphql\n  fragment PredictivePage on Page {\n    __typename\n    id\n    title\n    handle\n    trackingParameters\n  }\n\n  #graphql\n  fragment PredictiveProduct on Product {\n    __typename\n    id\n    title\n    handle\n    trackingParameters\n    selectedOrFirstAvailableVariant(\n      selectedOptions: []\n      ignoreUnknownOptions: true\n      caseInsensitiveMatch: true\n    ) {\n      id\n      image {\n        url\n        altText\n        width\n        height\n      }\n      price {\n        amount\n        currencyCode\n      }\n    }\n  }\n\n  #graphql\n  fragment PredictiveQuery on SearchQuerySuggestion {\n    __typename\n    text\n    styledText\n    trackingParameters\n  }\n\n': {
+  '#graphql\n  query PredictiveSearch(\n    $country: CountryCode\n    $language: LanguageCode\n    $limit: Int!\n    $limitScope: PredictiveSearchLimitScope!\n    $term: String!\n    $types: [PredictiveSearchType!]\n    $buyer: BuyerInput\n  ) @inContext(country: $country, language: $language, buyer: $buyer) {\n    predictiveSearch(\n      limit: $limit,\n      limitScope: $limitScope,\n      query: $term,\n      types: $types,\n    ) {\n      articles {\n        ...PredictiveArticle\n      }\n      collections {\n        ...PredictiveCollection\n      }\n      pages {\n        ...PredictivePage\n      }\n      products {\n        ...PredictiveProduct\n      }\n      queries {\n        ...PredictiveQuery\n      }\n    }\n  }\n  #graphql\n  fragment PredictiveArticle on Article {\n    __typename\n    id\n    title\n    handle\n    blog {\n      handle\n    }\n    image {\n      url\n      altText\n      width\n      height\n    }\n    trackingParameters\n  }\n\n  #graphql\n  fragment PredictiveCollection on Collection {\n    __typename\n    id\n    title\n    handle\n    image {\n      url\n      altText\n      width\n      height\n    }\n    trackingParameters\n  }\n\n  #graphql\n  fragment PredictivePage on Page {\n    __typename\n    id\n    title\n    handle\n    trackingParameters\n  }\n\n  #graphql\n  fragment PredictiveProduct on Product {\n    __typename\n    id\n    title\n    handle\n    vendor\n    trackingParameters\n    selectedOrFirstAvailableVariant(\n      selectedOptions: []\n      ignoreUnknownOptions: true\n      caseInsensitiveMatch: true\n    ) {\n      id\n      image {\n        url\n        altText\n        width\n        height\n      }\n      price {\n        amount\n        currencyCode\n      }\n    }\n  }\n\n  #graphql\n  fragment PredictiveQuery on SearchQuerySuggestion {\n    __typename\n    text\n    styledText\n    trackingParameters\n  }\n\n': {
     return: PredictiveSearchQuery;
     variables: PredictiveSearchQueryVariables;
   };
