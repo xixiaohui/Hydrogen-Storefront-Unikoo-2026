@@ -1569,3 +1569,145 @@ button.reset:hover:not(:has(> *)) {
     margin: 0;
   }
 }
+
+/*
+* --------------------------------------------------
+* Footer (P6)
+* --------------------------------------------------*/
+.site-footer {
+  background: var(--color-ink);
+  color: #fff;
+  margin-top: auto;
+}
+
+.footer-top {
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: 1fr;
+  padding-block: 3rem;
+
+  @media (min-width: 48em) {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  @media (min-width: 62em) {
+    grid-template-columns: 1.5fr 1fr 2fr;
+  }
+}
+
+.footer-logo {
+  color: var(--color-brand-400);
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.footer-tagline {
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin: 0.75rem 0 0;
+  max-width: 28rem;
+}
+
+.footer-heading {
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  margin: 0 0 1rem;
+  text-transform: uppercase;
+}
+
+.footer-contact-list {
+  display: grid;
+  gap: 0.625rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  a {
+    color: rgba(255, 255, 255, 0.85);
+    text-decoration: none;
+
+    &:hover {
+      color: var(--color-brand-400);
+    }
+  }
+
+  address {
+    color: rgba(255, 255, 255, 0.72);
+    font-style: normal;
+    line-height: 1.5;
+  }
+}
+
+.footer-nav {
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  @media (min-width: 48em) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.footer-column {
+  min-width: 0;
+}
+
+.footer-links {
+  display: grid;
+  gap: 0.5rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  a {
+    color: rgba(255, 255, 255, 0.78);
+    font-size: 0.875rem;
+    text-decoration: none;
+
+    &:hover {
+      color: var(--color-brand-400);
+      text-decoration: underline;
+    }
+  }
+}
+
+.footer-bottom {
+  align-items: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: space-between;
+  padding-block: 1.5rem;
+}
+
+.footer-copyright {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.8125rem;
+  margin: 0;
+}
+
+.footer-compliance {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  a {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.8125rem;
+    text-decoration: none;
+
+    &:hover {
+      color: var(--color-brand-400);
+    }
+  }
+}

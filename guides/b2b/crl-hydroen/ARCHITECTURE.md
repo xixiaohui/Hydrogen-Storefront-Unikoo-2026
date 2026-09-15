@@ -184,7 +184,25 @@
 验收：`codegen` + `typegen` + `tsc --noEmit` 无错误；`npm run lint` 0 error 0 warning；`npm run build` 成功；
 首页 SSR 输出含 `hero`、`category-nav`、`featured-products`、`value-props`。
 
-## 13. 后台（Shopify Admin）前置依赖
+## 13. 已落地：P6 Footer
+
+| 文件 | 说明 |
+| --- | --- |
+| `app/components/Footer.tsx` | 重写为工业风 footer：品牌 + 联系信息 + 多列链接 + 底部合规栏 |
+| `app/styles/app.css` | Footer 样式：深色背景、品牌区、联系区、多列链接区、版权/合规条 |
+
+结构：
+- **顶部**：品牌 logo + 标语（从 `header.shop.name`）| 联系信息（电话/邮箱/地址）| Shopify footer 菜单分栏
+- **底部**：版权 + 合规链接（Privacy / Terms / Shipping / Refund）
+
+约束：
+- 菜单内容来自 Shopify `footer` 菜单，merchandising 可配置
+- 联系信息静态，后续可迁移到 metaobjects 让运营可编辑
+- 合规链接直接指向 `/policies/*`
+
+验收：`npm run build` 成功；首页 SSR 输出含 `site-footer`、`footer-contact`、`footer-compliance`、`footer-nav`。
+
+## 14. 后台（Shopify Admin）前置依赖
 
 规格 §68：产品、集合、导航、客户、公司/公司地点、目录、Markets、Locations，
 以及 Metaobject 定义：`Hero`、`MegaMenuItem`、`Brand`、`Resource`、`TechnicalDocument`、`Location`。
