@@ -838,6 +838,31 @@ npm run dev
 
 优点：与站内抽屉一致、零新 CSS；缺点：多改动了两个既有文件。
 
+## 附录 3 — 已修复：B2B 客户登录后看到的仍是零售目录
+
+### 现象
+
+B2B 客户登录后，首页 / 集合页 / 全部商品 / 搜索结果仍是全部 C 端零售产品与零售价。
+
+### 根因（两点）
+
+1. **只有 PDP 注入了 buyer 上下文**。官方 cookbook 只改了 `products.$handle.tsx`，其余查询的 `@inContext` 只有 `country/language`。Shopify 官方 B2B headless 文档明确：未上下文化时使用店铺的 **base pricing 和 base product publishing**，即零售目录。
+2. **选择地点从未写入 session**。原 `B2BLocationSelector` 只提交 `CartForm.ACTIONS.BuyerIdentityUpdate`（仅更新购物车 buyer identity），`customerAccount.setBuyer()` 只在「单地点公司」的 `b2blocations` loader 里执行 → 多地点客户选完地点后 session 里仍没有 `companyLocationId`，所有查询依旧不上下文化。
+
+### 修复
+
+1. 新增 `app/lib/b2b.ts`：`getBuyerVariables(context)`（有 token 即上下文化，地点可选）与 `b2bCacheOptions(storefront, buyerVariables)`（有 buyer 时 `CacheNone()`）。
+2. 所有读产品 / 集合 / 价格的查询都加 `$buyer: BuyerInput` + `@inContext(..., buyer: $buyer)`（**每个文件都要改两份**）：
+   `_index.tsx`、`collections._index.tsx`、`collections.$handle.tsx`、`collections.all.tsx`、`search.tsx`（regular + predictive）、`products.$handle.tsx`。
+3. `b2blocations.tsx` 新增 `action`：`setBuyer(companyLocationId)` + `cart.updateBuyerIdentity({companyLocationId, customerAccessToken})`；loader 自动选中唯一地点时同样同步购物车。
+4. `B2BLocationSelector` 改为 `fetcher.submit({companyLocationId}, {method: 'POST', action: '/b2blocations'})`；React Router 在 action 后会自动 revalidate 当前路由与 fetchers。
+5. `B2BLocationProvider` 监听 `companyLocationId` 变化并 `useRevalidator().revalidate()`，覆盖「首屏渲染时地点尚未确定」的场景。
+
+### 备注
+
+- 只传 `customerAccessToken` 也能得到客户级目录上下文，因此未选地点时不再是完全零售视图；完整定价仍需 `companyLocationId`。
+- 任何后续新增的产品 / 集合查询都必须重复第 2 步，否则该页面会退回零售目录。
+
 ## 附录 2 — 已知官方写法的小坑
 
 1. `B2BLocationSelector` 官方对无 company 的访客渲染「No company found」，Step 3 已修正为 `return null`。

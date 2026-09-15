@@ -12,19 +12,11 @@ import {ProductPrice} from '~/components/ProductPrice';
 import {ProductImage} from '~/components/ProductImage';
 import {ProductForm} from '~/components/ProductForm';
 import {redirectIfHandleIsLocalized} from '~/lib/redirect';
+import type {BuyerVariables} from '~/lib/b2b';
+import {b2bCacheOptions, getBuyerVariables} from '~/lib/b2b';
 // @description Import B2B components for quantity rules and price breaks
 import {QuantityRules, hasQuantityRules} from '~/components/QuantityRules';
 import {PriceBreaks} from '~/components/PriceBreaks';
-
-// @description Define B2B buyer variables type for contextualized queries
-type BuyerVariables =
-  | {
-      buyer: {
-        companyLocationId: string;
-        customerAccessToken: string;
-      };
-    }
-  | {};
 
 export const meta: Route.MetaFunction = ({data}) => {
   return [
@@ -38,17 +30,7 @@ export const meta: Route.MetaFunction = ({data}) => {
 
 export async function loader(args: Route.LoaderArgs) {
   // @description Get B2B buyer context for contextualized product queries
-  const buyer = await args.context.customerAccount.getBuyer();
-
-  const buyerVariables: BuyerVariables =
-    buyer?.companyLocationId && buyer?.customerAccessToken
-      ? {
-          buyer: {
-            companyLocationId: buyer.companyLocationId,
-            customerAccessToken: buyer.customerAccessToken,
-          },
-        }
-      : {};
+  const buyerVariables = await getBuyerVariables(args.context);
 
   // Start fetching non-critical data without blocking time to first byte
   const deferredData = loadDeferredData(args);
@@ -83,10 +65,7 @@ async function loadCriticalData({
         selectedOptions: getSelectedProductOptions(request),
         ...buyerVariables,
       },
-      // @description Never share B2B contextualized prices between customers
-      ...('buyer' in buyerVariables
-        ? {cache: storefront.CacheNone()}
-        : {cache: storefront.CacheShort()}),
+      ...b2bCacheOptions(storefront, buyerVariables),
     }),
     // Add other queries here, so that they are loaded in parallel
   ]);

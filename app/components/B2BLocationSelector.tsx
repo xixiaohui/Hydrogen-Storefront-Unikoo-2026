@@ -1,5 +1,5 @@
 import {useEffect, useRef} from 'react';
-import {CartForm} from '@shopify/hydrogen';
+import {useFetcher} from 'react-router';
 import {Aside, useAside} from '~/components/Aside';
 import {useB2BLocation} from '~/components/B2BLocationProvider';
 import type {
@@ -12,11 +12,16 @@ import type {
  *
  * It opens itself automatically when the logged in customer is a B2B customer
  * without a company location set in the session (or from the header button).
+ *
+ * Selecting a location posts to the `/b2blocations` action, which stores the
+ * company location on the customer account session (so every Storefront query
+ * is contextualized with it) and updates the cart buyer identity.
  */
 export function LocationAside() {
-  const {company, companyLocationId, modalOpen, setModalOpen, refetch} =
+  const {company, companyLocationId, modalOpen, setModalOpen} =
     useB2BLocation();
   const {open, close} = useAside();
+  const fetcher = useFetcher();
 
   const asideRef = useRef({open, close});
   asideRef.current = {open, close};
@@ -43,6 +48,15 @@ export function LocationAside() {
       )
     : [];
 
+  const selectLocation = (locationId: string) => {
+    setModalOpen(false);
+    close();
+    fetcher.submit({companyLocationId: locationId}, {
+      method: 'POST',
+      action: '/b2blocations',
+    });
+  };
+
   return (
     <Aside type="location" heading="LOCATION">
       <div className="location-list">
@@ -56,34 +70,18 @@ export function LocationAside() {
           const selected = location.id === companyLocationId;
 
           return (
-            <CartForm
+            <button
               key={location.id}
-              route="/cart"
-              action={CartForm.ACTIONS.BuyerIdentityUpdate}
-              inputs={{
-                buyerIdentity: {companyLocationId: location.id},
-              }}
+              aria-label={`Select B2B location: ${location.name}`}
+              className={`location-item${selected ? ' selected' : ''}`}
+              disabled={fetcher.state !== 'idle'}
+              onClick={() => selectLocation(location.id)}
             >
-              {(fetcher) => (
-                <button
-                  aria-label={`Select B2B location: ${location.name}`}
-                  className={`location-item${selected ? ' selected' : ''}`}
-                  onClick={(event) => {
-                    setModalOpen(false);
-                    close();
-                    void fetcher.submit(event.currentTarget.form, {
-                      method: 'POST',
-                    });
-                    refetch();
-                  }}
-                >
-                  <strong>{location.name}</strong>
-                  {addressLines.map((line: string) => (
-                    <span key={line}>{line}</span>
-                  ))}
-                </button>
-              )}
-            </CartForm>
+              <strong>{location.name}</strong>
+              {addressLines.map((line: string) => (
+                <span key={line}>{line}</span>
+              ))}
+            </button>
           );
         })}
       </div>

@@ -12,6 +12,7 @@ import type {
   RegularSearchQuery,
   PredictiveSearchQuery,
 } from 'storefrontapi.generated';
+import {b2bCacheOptions, getBuyerVariables} from '~/lib/b2b';
 
 export const meta: Route.MetaFunction = () => {
   return [{title: `Hydrogen | Search`}];
@@ -161,7 +162,8 @@ export const SEARCH_QUERY = `#graphql
     $last: Int
     $term: String!
     $startCursor: String
-  ) @inContext(country: $country, language: $language) {
+    $buyer: BuyerInput
+  ) @inContext(country: $country, language: $language, buyer: $buyer) {
     articles: search(
       query: $term,
       types: [ARTICLE],
@@ -225,13 +227,17 @@ async function regularSearch({
   const variables = getPaginationVariables(request, {pageBy: 8});
   const term = String(url.searchParams.get('q') || '');
 
+  // @description Contextualize the query so B2B customers see their catalog
+  const buyerVariables = await getBuyerVariables(context);
+
   // Search articles, pages, and products for the `q` term
   const {
     errors,
     ...items
   }: {errors?: Array<{message: string}>} & RegularSearchQuery =
     await storefront.query(SEARCH_QUERY, {
-      variables: {...variables, term},
+      variables: {...variables, term, ...buyerVariables},
+      ...b2bCacheOptions(storefront, buyerVariables),
     });
 
   if (!items) {
@@ -344,7 +350,8 @@ const PREDICTIVE_SEARCH_QUERY = `#graphql
     $limitScope: PredictiveSearchLimitScope!
     $term: String!
     $types: [PredictiveSearchType!]
-  ) @inContext(country: $country, language: $language) {
+    $buyer: BuyerInput
+  ) @inContext(country: $country, language: $language, buyer: $buyer) {
     predictiveSearch(
       limit: $limit,
       limitScope: $limitScope,
@@ -393,6 +400,9 @@ async function predictiveSearch({
 
   if (!term) return {type, term, result: getEmptyPredictiveSearchResult()};
 
+  // @description Contextualize the query so B2B customers see their catalog
+  const buyerVariables = await getBuyerVariables(context);
+
   // Predictively search articles, collections, pages, products, and queries (suggestions)
   const {
     predictiveSearch: items,
@@ -404,7 +414,9 @@ async function predictiveSearch({
         limit,
         limitScope: 'EACH',
         term,
+        ...buyerVariables,
       },
+      ...b2bCacheOptions(storefront, buyerVariables),
     });
 
   if (errors) {

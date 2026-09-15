@@ -3,6 +3,7 @@ import type {Route} from './+types/collections._index';
 import {getPaginationVariables, Image} from '@shopify/hydrogen';
 import type {CollectionFragment} from 'storefrontapi.generated';
 import {PaginatedResourceSection} from '~/components/PaginatedResourceSection';
+import {b2bCacheOptions, getBuyerVariables} from '~/lib/b2b';
 
 export async function loader(args: Route.LoaderArgs) {
   // Start fetching non-critical data without blocking time to first byte
@@ -23,9 +24,13 @@ async function loadCriticalData({context, request}: Route.LoaderArgs) {
     pageBy: 4,
   });
 
+  // @description Contextualize the query so B2B customers see their catalog
+  const buyerVariables = await getBuyerVariables(context);
+
   const [{collections}] = await Promise.all([
     context.storefront.query(COLLECTIONS_QUERY, {
-      variables: paginationVariables,
+      variables: {...paginationVariables, ...buyerVariables},
+      ...b2bCacheOptions(context.storefront, buyerVariables),
     }),
     // Add other queries here, so that they are loaded in parallel
   ]);
@@ -112,7 +117,8 @@ const COLLECTIONS_QUERY = `#graphql
     $language: LanguageCode
     $last: Int
     $startCursor: String
-  ) @inContext(country: $country, language: $language) {
+    $buyer: BuyerInput
+  ) @inContext(country: $country, language: $language, buyer: $buyer) {
     collections(
       first: $first,
       last: $last,

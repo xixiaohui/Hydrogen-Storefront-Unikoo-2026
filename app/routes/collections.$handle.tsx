@@ -5,6 +5,7 @@ import {PaginatedResourceSection} from '~/components/PaginatedResourceSection';
 import {redirectIfHandleIsLocalized} from '~/lib/redirect';
 import {ProductItem} from '~/components/ProductItem';
 import type {ProductItemFragment} from 'storefrontapi.generated';
+import {b2bCacheOptions, getBuyerVariables} from '~/lib/b2b';
 
 export const meta: Route.MetaFunction = ({data}) => {
   return [{title: `Hydrogen | ${data?.collection.title ?? ''} Collection`}];
@@ -35,11 +36,15 @@ async function loadCriticalData({context, params, request}: Route.LoaderArgs) {
     throw redirect('/collections');
   }
 
+  // @description Contextualize the query so B2B customers see their catalog
+  const buyerVariables = await getBuyerVariables(context);
+
   const [{collection}] = await Promise.all([
     storefront.query(COLLECTION_QUERY, {
-      variables: {handle, ...paginationVariables},
-      // Add other queries here, so that they are loaded in parallel
+      variables: {handle, ...paginationVariables, ...buyerVariables},
+      ...b2bCacheOptions(storefront, buyerVariables),
     }),
+    // Add other queries here, so that they are loaded in parallel
   ]);
 
   if (!collection) {
@@ -130,11 +135,12 @@ const COLLECTION_QUERY = `#graphql
     $handle: String!
     $country: CountryCode
     $language: LanguageCode
+    $buyer: BuyerInput
     $first: Int
     $last: Int
     $startCursor: String
     $endCursor: String
-  ) @inContext(country: $country, language: $language) {
+  ) @inContext(country: $country, language: $language, buyer: $buyer) {
     collection(handle: $handle) {
       id
       handle

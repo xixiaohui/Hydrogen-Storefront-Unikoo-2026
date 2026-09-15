@@ -4,6 +4,7 @@ import {getPaginationVariables, Image, Money} from '@shopify/hydrogen';
 import {PaginatedResourceSection} from '~/components/PaginatedResourceSection';
 import {ProductItem} from '~/components/ProductItem';
 import type {CollectionItemFragment} from 'storefrontapi.generated';
+import {b2bCacheOptions, getBuyerVariables} from '~/lib/b2b';
 
 export const meta: Route.MetaFunction = () => {
   return [{title: `Hydrogen | Products`}];
@@ -29,9 +30,13 @@ async function loadCriticalData({context, request}: Route.LoaderArgs) {
     pageBy: 8,
   });
 
+  // @description Contextualize the query so B2B customers see their catalog
+  const buyerVariables = await getBuyerVariables(context);
+
   const [{products}] = await Promise.all([
     storefront.query(CATALOG_QUERY, {
-      variables: {...paginationVariables},
+      variables: {...paginationVariables, ...buyerVariables},
+      ...b2bCacheOptions(storefront, buyerVariables),
     }),
     // Add other queries here, so that they are loaded in parallel
   ]);
@@ -101,11 +106,12 @@ const CATALOG_QUERY = `#graphql
   query Catalog(
     $country: CountryCode
     $language: LanguageCode
+    $buyer: BuyerInput
     $first: Int
     $last: Int
     $startCursor: String
     $endCursor: String
-  ) @inContext(country: $country, language: $language) {
+  ) @inContext(country: $country, language: $language, buyer: $buyer) {
     products(first: $first, last: $last, before: $startCursor, after: $endCursor) {
       nodes {
         ...CollectionItem

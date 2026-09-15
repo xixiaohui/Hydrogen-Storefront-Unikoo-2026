@@ -6,7 +6,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import {useFetcher} from 'react-router';
+import {useFetcher, useRevalidator} from 'react-router';
 import {type CustomerCompany} from '~/root';
 
 export type B2BLocationContextValue = {
@@ -36,8 +36,12 @@ export function B2BLocationProvider({
   children: React.ReactNode;
 }) {
   const fetcher = useFetcher<B2BLocationContextValue>();
+  const revalidator = useRevalidator();
   const [modalOpen, setModalOpen] = useState(fetcher?.data?.modalOpen);
   const [reloadKey, setReloadKey] = useState(0);
+
+  const initialized = useRef(false);
+  const previousLocationId = useRef<string | undefined>(undefined);
 
   // Keep a stable reference to the fetcher so the effect below only
   // runs on mount and whenever `refetch()` is called
@@ -47,6 +51,28 @@ export function B2BLocationProvider({
   useEffect(() => {
     void fetcherRef.current.load('/b2blocations');
   }, [reloadKey]);
+
+  // The company location can still change after the page was rendered, for
+  // example when it is auto selected for a single location company. Reload the
+  // route data so products and prices match the selected company location.
+  useEffect(() => {
+    const companyLocationId = fetcher.data?.companyLocationId;
+
+    if (!fetcher.data) return;
+
+    if (!initialized.current) {
+      initialized.current = true;
+      previousLocationId.current = companyLocationId;
+      if (companyLocationId) revalidator.revalidate();
+      return;
+    }
+
+    if (companyLocationId && companyLocationId !== previousLocationId.current) {
+      previousLocationId.current = companyLocationId;
+      revalidator.revalidate();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetcher.data, revalidator]);
 
   const value = useMemo<B2BLocationContextValue>(() => {
     return {

@@ -17,18 +17,55 @@ export async function loader({context}: Route.LoaderArgs) {
       null;
   }
 
-  // If there is only 1 company location, set it in session
+  // If there is only 1 company location, set it in session and keep the cart
+  // in sync so products, prices and quantity rules match that location
   if (!companyLocationId && company?.locations?.edges?.length === 1) {
     companyLocationId = company.locations.edges[0].node.id;
 
     customerAccount.setBuyer({
       companyLocationId,
     });
+
+    await context.cart.updateBuyerIdentity({
+      companyLocationId,
+      ...(buyer?.customerAccessToken
+        ? {customerAccessToken: buyer.customerAccessToken}
+        : {}),
+    });
   }
 
   const modalOpen = Boolean(company) && !companyLocationId;
 
   return {company, companyLocationId, modalOpen};
+}
+
+/**
+ * Saves the selected company location on the customer account session.
+ *
+ * Without this, Storefront queries stay uncontextualized and the customer keeps
+ * seeing the retail catalog. The cart buyer identity is updated as well, so
+ * cart prices and quantity rules match the selected B2B catalog.
+ */
+export async function action({request, context}: Route.ActionArgs) {
+  const formData = await request.formData();
+  const companyLocationId = String(formData.get('companyLocationId') || '');
+
+  if (!companyLocationId) {
+    return {error: 'Missing companyLocationId'};
+  }
+
+  const buyer = await context.customerAccount.getBuyer();
+
+  context.customerAccount.setBuyer({companyLocationId});
+
+  await context.cart.updateBuyerIdentity({
+    companyLocationId,
+    ...(buyer?.customerAccessToken
+      ? {customerAccessToken: buyer.customerAccessToken}
+      : {}),
+  });
+
+  return {companyLocationId};
 }
 
 /**

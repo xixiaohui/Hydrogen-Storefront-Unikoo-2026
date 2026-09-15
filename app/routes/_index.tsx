@@ -8,6 +8,7 @@ import type {
 } from 'storefrontapi.generated';
 import {ProductItem} from '~/components/ProductItem';
 import {MockShopNotice} from '~/components/MockShopNotice';
+import {b2bCacheOptions, getBuyerVariables} from '~/lib/b2b';
 
 export const meta: Route.MetaFunction = () => {
   return [{title: 'Hydrogen | Home'}];
@@ -28,8 +29,14 @@ export async function loader(args: Route.LoaderArgs) {
  * needed to render the page. If it's unavailable, the whole page should 400 or 500 error.
  */
 async function loadCriticalData({context}: Route.LoaderArgs) {
+  // @description Contextualize the query so B2B customers see their catalog
+  const buyerVariables = await getBuyerVariables(context);
+
   const [{collections}] = await Promise.all([
-    context.storefront.query(FEATURED_COLLECTION_QUERY),
+    context.storefront.query(FEATURED_COLLECTION_QUERY, {
+      variables: {...buyerVariables},
+      ...b2bCacheOptions(context.storefront, buyerVariables),
+    }),
     // Add other queries here, so that they are loaded in parallel
   ]);
 
@@ -45,8 +52,13 @@ async function loadCriticalData({context}: Route.LoaderArgs) {
  * Make sure to not throw any errors here, as it will cause the page to 500.
  */
 function loadDeferredData({context}: Route.LoaderArgs) {
-  const recommendedProducts = context.storefront
-    .query(RECOMMENDED_PRODUCTS_QUERY)
+  const recommendedProducts = getBuyerVariables(context)
+    .then((buyerVariables) =>
+      context.storefront.query(RECOMMENDED_PRODUCTS_QUERY, {
+        variables: {...buyerVariables},
+        ...b2bCacheOptions(context.storefront, buyerVariables),
+      }),
+    )
     .catch((error: Error) => {
       // Log query errors, but don't throw them so the page can still render
       console.error(error);
@@ -137,8 +149,11 @@ const FEATURED_COLLECTION_QUERY = `#graphql
     }
     handle
   }
-  query FeaturedCollection($country: CountryCode, $language: LanguageCode)
-    @inContext(country: $country, language: $language) {
+  query FeaturedCollection(
+    $country: CountryCode
+    $language: LanguageCode
+    $buyer: BuyerInput
+  ) @inContext(country: $country, language: $language, buyer: $buyer) {
     collections(first: 1, sortKey: UPDATED_AT, reverse: true) {
       nodes {
         ...FeaturedCollection
@@ -166,8 +181,11 @@ const RECOMMENDED_PRODUCTS_QUERY = `#graphql
       height
     }
   }
-  query RecommendedProducts ($country: CountryCode, $language: LanguageCode)
-    @inContext(country: $country, language: $language) {
+  query RecommendedProducts (
+    $country: CountryCode
+    $language: LanguageCode
+    $buyer: BuyerInput
+  ) @inContext(country: $country, language: $language, buyer: $buyer) {
     products(first: 4, sortKey: UPDATED_AT, reverse: true) {
       nodes {
         ...RecommendedProduct
