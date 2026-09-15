@@ -76,3 +76,17 @@ Follow step 1 and 2 of <https://shopify.dev/docs/custom-storefronts/building-wit
 
 #2026.9.15
 开始编码v1.0
+
+P0-设计系统
+P1-导航
+P2-首页
+P3-集合筛选
+P4-搜索
+P5-PDP产品详情页
+P6-Footer
+P7-csv批量 采购
+P8-个人中心 account dashboard
+P9-性能
+P10-可访问性
+P11-seo
+P12-特定功能增强（购物车优化，结账流程）
