@@ -259,7 +259,24 @@
 验收：`tsc --noEmit` 无错误；`npm run lint` 0 error 0 warning；`npm run build` 成功；
 首页/PDP/集合页 SSR 输出含 `property="og:*"` 和 `application/ld+json`。
 
-## 17. 后台（Shopify Admin）前置依赖
+## 17. 已落地：购物车优化 + 结账流程
+
+| 文件 | 说明 |
+| --- | --- |
+| `app/components/CartLineItem.tsx` | 工业风购物车行：大图（120px）、SKU 显示、选项列表、金额、数量控制器（尊重 B2B quantityRule 增量/最小/最大）、Remove 按钮 |
+| `app/components/CartSummary.tsx` | 重写为 Order Summary 卡片：Subtotal/Tax/Duty 明细、Total、折扣码表单、礼品卡表单、**Order notes**（`CartForm.ACTIONS.NoteUpdate`）、"Proceed to Checkout" 主按钮 |
+| `app/routes/cart.tsx`（+ `($locale)` 副本） | 工业风购物车页面：面包屑 + 标题 + 商品计数；action 新增 `NoteUpdate` 分支 |
+| `app/styles/app.css` | 购物车样式：行项目三栏布局（图/详情/操作）、数量控制器、Order Summary 卡片、aside 模式覆盖 |
+
+约束：
+- 数量增减遵守 B2B quantityRule（increment/minimum/maximum），按钮在边界自动禁用
+- 购物车备注通过 `cart.updateNote` 持久化到 Shopify checkout
+- 结账跳转到 Shopify 托管 Checkout（buyer identity 由 B2BLocationProvider 同步），不自建结账
+
+验收：`tsc --noEmit` 无错误；`npm run lint` 0 error 0 warning；`npm run build` 成功；
+`/cart` 返回 200 且含 `cart-page` 与 `breadcrumb`。
+
+## 18. 后台（Shopify Admin）前置依赖
 
 规格 §68：产品、集合、导航、客户、公司/公司地点、目录、Markets、Locations，
 以及 Metaobject 定义：`Hero`、`MegaMenuItem`、`Brand`、`Resource`、`TechnicalDocument`、`Location`。
