@@ -165,7 +165,26 @@
 预览下真实产品页返回 200，SSR 输出含 `product-gallery`、`product-b2b-info`、`product-price-current`、
 `product-specs`、`related-products`、`breadcrumb`。
 
-## 12. 后台（Shopify Admin）前置依赖
+## 12. 已落地：P2 首页
+
+| 文件 | 说明 |
+| --- | --- |
+| `app/components/home/Hero.tsx` | 工业风 Hero 横幅：品牌标语 + 双 CTA（Shop products / Request a quote），背景用最新更新的 collection 图 |
+| `app/components/home/CategoryNav.tsx` | 分类快速导航：前 8 个 collection 卡片，含图 + 标题 + 描述 |
+| `app/components/home/FeaturedProducts.tsx` | 精选产品：deferred 加载，skeleton 占位，复用 `ProductItem` 工业风卡片 |
+| `app/components/home/ValueProps.tsx` | 价值主张：Volume pricing / Free shipping / Technical support / Certified quality |
+| `app/routes/_index.tsx`（+ `($locale)` 副本） | 重写为 Hero → CategoryNav → FeaturedProducts → ValueProps 结构；新增 `CollectionsNav` 查询；仍带 `$buyer` + `b2bCacheOptions()` |
+| `app/styles/app.css` | 首页样式：hero 叠加层/标题/按钮、分类卡片网格、精选产品 skeleton、价值主张网格 |
+
+约束：
+- Hero 背景和分类导航都来自 Shopify collections（merchandising 控制排序，无需代码改动）
+- 精选产品 deferred 加载，不影响首屏
+- 价值主张静态文案，后续可迁移到 metaobjects 让运营可编辑
+
+验收：`codegen` + `typegen` + `tsc --noEmit` 无错误；`npm run lint` 0 error 0 warning；`npm run build` 成功；
+首页 SSR 输出含 `hero`、`category-nav`、`featured-products`、`value-props`。
+
+## 13. 后台（Shopify Admin）前置依赖
 
 规格 §68：产品、集合、导航、客户、公司/公司地点、目录、Markets、Locations，
 以及 Metaobject 定义：`Hero`、`MegaMenuItem`、`Brand`、`Resource`、`TechnicalDocument`、`Location`。
