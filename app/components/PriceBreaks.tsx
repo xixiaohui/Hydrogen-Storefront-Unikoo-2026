@@ -10,30 +10,33 @@ export type PriceBreaksProps = {
   priceBreaks: PriceBreak[];
 };
 
+/**
+ * B2B volume pricing displayed as a compact data table.
+ */
 export function PriceBreaks({priceBreaks}: PriceBreaksProps) {
   return (
-    <>
-      <h4>Volume Pricing</h4>
-      <table className="rule-table">
+    <div className="product-b2b-rules">
+      <h3 className="section-heading">
+        <span>Volume Pricing</span>
+      </h3>
+      <table className="data-table">
         <thead>
           <tr>
-            <th className="table-heading">Minimum Quantity</th>
-            <th className="table-heading">Unit Price</th>
+            <th>Minimum Quantity</th>
+            <th>Unit Price</th>
           </tr>
         </thead>
         <tbody>
-          {priceBreaks.map((priceBreak) => {
-            return (
-              <tr key={`price-break-${priceBreak.minimumQuantity}`}>
-                <th className="table-item">{priceBreak.minimumQuantity}</th>
-                <th className="table-item">
-                  <Money data={priceBreak.price} />
-                </th>
-              </tr>
-            );
-          })}
+          {priceBreaks.map((pb) => (
+            <tr key={`pb-${pb.minimumQuantity}`}>
+              <td>{pb.minimumQuantity}+</td>
+              <td>
+                <Money data={pb.price} />
+              </td>
+            </tr>
+          ))}
         </tbody>
       </table>
-    </>
+    </div>
   );
 }

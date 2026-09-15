@@ -141,7 +141,31 @@
 验收：`codegen` + `typegen` + `tsc --noEmit` 无错误；`npm run lint` 0 error 0 warning；`npm run build` 成功；
 预览下 `/search?q=glass` 返回 200 且含产品卡与计数。
 
-## 11. 后台（Shopify Admin）前置依赖
+## 11. 已落地：P5 产品详情页 (PDP)
+
+| 文件 | 说明 |
+| --- | --- |
+| `app/components/product/ProductGallery.tsx` | 多图画廊：主图 + 缩略图条，点击切换，键盘可达 |
+| `app/components/product/ProductB2BInfo.tsx` | 工业风身份条：品牌 badge + SKU + 库存状态 badge |
+| `app/components/product/ProductSpecs.tsx` | 规格数据表，从 `custom.specifications` metafield（JSON 数组）渲染；无数据时显示配置指引 |
+| `app/components/product/ProductDocuments.tsx` | 技术文档下载列表，从 `custom.documents` metafield（JSON 数组 `{title,url}`）渲染 |
+| `app/components/product/RelatedProducts.tsx` | Shopify `productRecommendations` API，deferred 加载，不影响首屏 |
+| `app/components/ProductPrice.tsx` | 升级：大号当前价格 + 删除线 compare-at 价格 |
+| `app/components/QuantityRules.tsx` | 升级：工业风数据表样式 |
+| `app/components/PriceBreaks.tsx` | 升级：工业风数据表样式 |
+| `app/routes/products.$handle.tsx`（+ `($locale)` 副本） | 重写为工业风 PDP 布局：面包屑 → 画廊+详情两栏 → 规格 → 描述 → 文档 → 标签 → 相关产品；查询扩展 `media`、`metafields`、`tags`、`productRecommendations`；仍带 `$buyer` + `b2bCacheOptions()` |
+| `app/styles/app.css` | PDP 样式：画廊/缩略图、价格块、B2B 信息、产品表单覆盖、相关产品区 |
+
+约束：
+- 规格和文档依赖 Shopify metafields（namespace `custom`，key `specifications` / `documents`，类型 JSON）
+- 相关产品使用 Shopify 原生推荐 API，无需手动维护关联
+- 所有查询仍带 buyer 上下文，B2B 缓存隔离
+
+验收：`codegen` + `typegen` + `tsc --noEmit` 无错误；`npm run lint` 0 error 0 warning；`npm run build` 成功；
+预览下真实产品页返回 200，SSR 输出含 `product-gallery`、`product-b2b-info`、`product-price-current`、
+`product-specs`、`related-products`、`breadcrumb`。
+
+## 12. 后台（Shopify Admin）前置依赖
 
 规格 §68：产品、集合、导航、客户、公司/公司地点、目录、Markets、Locations，
 以及 Metaobject 定义：`Hero`、`MegaMenuItem`、`Brand`、`Resource`、`TechnicalDocument`、`Location`。

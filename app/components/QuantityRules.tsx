@@ -15,30 +15,35 @@ export const hasQuantityRules = (quantityRule?: QuantityRulesProps) => {
   );
 };
 
+/**
+ * B2B quantity rules displayed as a compact data table.
+ */
 export function QuantityRules({
   maximum,
   minimum,
   increment,
 }: QuantityRulesProps) {
   return (
-    <>
-      <h4>Quantity Rules</h4>
-      <table className="rule-table">
+    <div className="product-b2b-rules">
+      <h3 className="section-heading">
+        <span>Quantity Rules</span>
+      </h3>
+      <table className="data-table">
         <thead>
           <tr>
-            <th className="table-heading">Increment</th>
-            <th className="table-heading">Minimum</th>
-            <th className="table-heading">Maximum</th>
+            <th>Increment</th>
+            <th>Minimum</th>
+            <th>Maximum</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <th className="table-item">{increment}</th>
-            <th className="table-item">{minimum}</th>
-            <th className="table-item">{maximum}</th>
+            <td>{increment ?? 1}</td>
+            <td>{minimum ?? 1}</td>
+            <td>{maximum ?? '—'}</td>
           </tr>
         </tbody>
       </table>
-    </>
+    </div>
   );
 }

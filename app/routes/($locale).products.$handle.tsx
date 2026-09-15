@@ -9,14 +9,18 @@ import {
   useSelectedOptionInUrlParam,
 } from '@shopify/hydrogen';
 import {ProductPrice} from '~/components/ProductPrice';
-import {ProductImage} from '~/components/ProductImage';
 import {ProductForm} from '~/components/ProductForm';
 import {redirectIfHandleIsLocalized} from '~/lib/redirect';
 import type {BuyerVariables} from '~/lib/b2b';
 import {b2bCacheOptions, getBuyerVariables} from '~/lib/b2b';
-// @description Import B2B components for quantity rules and price breaks
 import {QuantityRules, hasQuantityRules} from '~/components/QuantityRules';
 import {PriceBreaks} from '~/components/PriceBreaks';
+import {Breadcrumbs} from '~/components/Breadcrumbs';
+import {ProductGallery} from '~/components/product/ProductGallery';
+import {ProductB2BInfo} from '~/components/product/ProductB2BInfo';
+import {ProductSpecs} from '~/components/product/ProductSpecs';
+import {ProductDocuments} from '~/components/product/ProductDocuments';
+import {RelatedProducts} from '~/components/product/RelatedProducts';
 
 export const meta: Route.MetaFunction = ({data}) => {
   return [
@@ -29,22 +33,12 @@ export const meta: Route.MetaFunction = ({data}) => {
 };
 
 export async function loader(args: Route.LoaderArgs) {
-  // @description Get B2B buyer context for contextualized product queries
   const buyerVariables = await getBuyerVariables(args.context);
-
-  // Start fetching non-critical data without blocking time to first byte
-  const deferredData = loadDeferredData(args);
-
-  // Await the critical data required to render initial state of the page
+  const deferredData = loadDeferredData({...args, buyerVariables});
   const criticalData = await loadCriticalData({...args, buyerVariables});
-
   return {...deferredData, ...criticalData};
 }
 
-/**
- * Load data necessary for rendering content above the fold. This is the critical data
- * needed to render the page. If it's unavailable, the whole page should 400 or 500 error.
- */
 async function loadCriticalData({
   context,
   params,
@@ -67,98 +61,155 @@ async function loadCriticalData({
       },
       ...b2bCacheOptions(storefront, buyerVariables),
     }),
-    // Add other queries here, so that they are loaded in parallel
   ]);
 
   if (!product?.id) {
     throw new Response(null, {status: 404});
   }
 
-  // The API handle might be localized, so redirect to the localized handle
   redirectIfHandleIsLocalized(request, {handle, data: product});
 
-  return {
-    product,
-  };
+  return {product};
 }
 
-/**
- * Load data for rendering content below the fold. This data is deferred and will be
- * fetched after the initial page load. If it's unavailable, the page should still 200.
- * Make sure to not throw any errors here, as it will cause the page to 500.
- */
-function loadDeferredData({context, params}: Route.LoaderArgs) {
-  // Put any API calls that is not critical to be available on first page render
-  // For example: product reviews, product recommendations, social feeds.
+function loadDeferredData({
+  context,
+  params,
+  buyerVariables,
+}: Route.LoaderArgs & {buyerVariables: BuyerVariables}) {
+  const {storefront} = context;
+  const productId = params.handle
+    ? `gid://shopify/Product/${params.handle}`
+    : undefined;
 
-  return {};
+  const recommendations = productId
+    ? storefront
+        .query(PRODUCT_RECOMMENDATIONS_QUERY, {
+          variables: {productId, ...buyerVariables},
+          ...b2bCacheOptions(storefront, buyerVariables),
+        })
+        .catch((err: Error) => {
+          console.error('Recommendations error:', err);
+          return null;
+        })
+    : Promise.resolve(null);
+
+  return {recommendations};
 }
 
 export default function Product() {
-  const {product} = useLoaderData<typeof loader>();
+  const {product, recommendations} = useLoaderData<typeof loader>();
 
-  // Optimistically selects a variant with given available variant information
   const selectedVariant = useOptimisticVariant(
     product.selectedOrFirstAvailableVariant,
     getAdjacentAndFirstAvailableVariants(product),
   );
 
-  // Sets the search param to the selected variant without navigation
-  // only when no search params are set in the url
   useSelectedOptionInUrlParam(selectedVariant.selectedOptions);
 
-  // Get the product options array
   const productOptions = getProductOptions({
     ...product,
     selectedOrFirstAvailableVariant: selectedVariant,
   });
 
-  const {title, descriptionHtml} = product;
+  const {title, descriptionHtml, vendor, tags} = product;
+  const metafields = (product.metafields ?? []).filter(Boolean) as Array<{
+    namespace: string;
+    key: string;
+    value: string;
+  }>;
+  const sku = selectedVariant?.sku;
+  const media = (product.media?.nodes ?? [])
+    .filter((n) => Boolean(n.image))
+    .map((n) => ({image: n.image!})) as any;
 
   return (
-    <div className="product">
-      <ProductImage image={selectedVariant?.image} />
-      <div className="product-main">
-        <h1>{title}</h1>
-        <ProductPrice
-          price={selectedVariant?.price}
-          compareAtPrice={selectedVariant?.compareAtPrice}
+    <div className="product-page">
+      <div className="container-page">
+        <Breadcrumbs
+          crumbs={[
+            {label: 'Products', to: '/collections/all'},
+            {label: title},
+          ]}
         />
-        <br />
-        <ProductForm
-          productOptions={productOptions}
-          selectedVariant={selectedVariant}
-          // @description Add to cart respects the B2B minimum quantity
-          quantity={
-            selectedVariant?.quantityRule?.minimum ||
-            selectedVariant?.quantityRule?.increment ||
-            1
-          }
-        />
-        <br />
-        {/* @description Display B2B quantity rules if they exist */}
-        {hasQuantityRules(selectedVariant?.quantityRule) ? (
-          <QuantityRules
-            maximum={selectedVariant?.quantityRule.maximum}
-            minimum={selectedVariant?.quantityRule.minimum}
-            increment={selectedVariant?.quantityRule.increment}
-          />
-        ) : null}
-        <br />
-        {/* @description Display B2B price breaks if they exist */}
-        {selectedVariant?.quantityPriceBreaks?.nodes &&
-        selectedVariant?.quantityPriceBreaks?.nodes?.length > 0 ? (
-          <PriceBreaks
-            priceBreaks={selectedVariant?.quantityPriceBreaks?.nodes}
-          />
-        ) : null}
-        <p>
-          <strong>Description</strong>
-        </p>
-        <br />
-        <div dangerouslySetInnerHTML={{__html: descriptionHtml}} />
-        <br />
+
+        <div className="product-layout">
+          <div className="product-gallery-col">
+            <ProductGallery media={media} />
+          </div>
+
+          <div className="product-detail-col">
+            <ProductB2BInfo
+              vendor={vendor}
+              sku={sku}
+              availableForSale={selectedVariant?.availableForSale ?? false}
+            />
+
+            <h1 className="product-title">{title}</h1>
+
+            <ProductPrice
+              price={selectedVariant?.price}
+              compareAtPrice={selectedVariant?.compareAtPrice}
+            />
+
+            <ProductForm
+              productOptions={productOptions}
+              selectedVariant={selectedVariant}
+              quantity={
+                selectedVariant?.quantityRule?.minimum ||
+                selectedVariant?.quantityRule?.increment ||
+                1
+              }
+            />
+
+            {hasQuantityRules(selectedVariant?.quantityRule) && (
+              <QuantityRules
+                maximum={selectedVariant?.quantityRule?.maximum}
+                minimum={selectedVariant?.quantityRule?.minimum}
+                increment={selectedVariant?.quantityRule?.increment}
+              />
+            )}
+
+            {selectedVariant?.quantityPriceBreaks?.nodes &&
+              selectedVariant.quantityPriceBreaks.nodes.length > 0 && (
+                <PriceBreaks
+                  priceBreaks={selectedVariant.quantityPriceBreaks.nodes}
+                />
+              )}
+
+            {descriptionHtml && (
+              <div className="product-description">
+                <h2 className="section-heading">
+                  <span>Description</span>
+                </h2>
+                <div
+                  dangerouslySetInnerHTML={{__html: descriptionHtml}}
+                />
+              </div>
+            )}
+
+            <ProductDocuments metafields={metafields} />
+
+            {tags && tags.length > 0 && (
+              <div className="product-tags">
+                <span className="label">Tags</span>
+                <div className="product-tags-list">
+                  {tags.map((tag) => (
+                    <span className="badge" key={tag}>
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <ProductSpecs metafields={metafields} />
       </div>
+
+      <RelatedProducts recommendations={recommendations} />
+
       <Analytics.ProductView
         data={{
           products: [
@@ -177,6 +228,10 @@ export default function Product() {
     </div>
   );
 }
+
+/* ------------------------------------------------------------------ */
+/* GraphQL                                                            */
+/* ------------------------------------------------------------------ */
 
 const PRODUCT_VARIANT_FRAGMENT = `#graphql
   fragment ProductVariant on ProductVariant {
@@ -206,7 +261,6 @@ const PRODUCT_VARIANT_FRAGMENT = `#graphql
       name
       value
     }
-    # @description Add B2B quantity rules and price breaks to variant fragment
     quantityRule {
       maximum
       minimum
@@ -238,8 +292,30 @@ const PRODUCT_FRAGMENT = `#graphql
     handle
     descriptionHtml
     description
+    tags
     encodedVariantExistence
     encodedVariantAvailability
+    media(first: 10) {
+      nodes {
+        ... on MediaImage {
+          image {
+            id
+            url
+            altText
+            width
+            height
+          }
+        }
+      }
+    }
+    metafields(identifiers: [
+      {namespace: "custom", key: "specifications"},
+      {namespace: "custom", key: "documents"}
+    ]) {
+      namespace
+      key
+      value
+    }
     options {
       name
       optionValues {
@@ -284,4 +360,40 @@ const PRODUCT_QUERY = `#graphql
     }
   }
   ${PRODUCT_FRAGMENT}
+` as const;
+
+const PRODUCT_RECOMMENDATIONS_FRAGMENT = `#graphql
+  fragment ProductRecommendation on Product {
+    id
+    title
+    vendor
+    handle
+    featuredImage {
+      id
+      url
+      altText
+      width
+      height
+    }
+    priceRange {
+      minVariantPrice {
+        amount
+        currencyCode
+      }
+    }
+  }
+` as const;
+
+const PRODUCT_RECOMMENDATIONS_QUERY = `#graphql
+  query ProductRecommendations(
+    $country: CountryCode
+    $language: LanguageCode
+    $buyer: BuyerInput
+    $productId: ID!
+  ) @inContext(country: $country, language: $language, buyer: $buyer) {
+    productRecommendations(productId: $productId) {
+      ...ProductRecommendation
+    }
+  }
+  ${PRODUCT_RECOMMENDATIONS_FRAGMENT}
 ` as const;

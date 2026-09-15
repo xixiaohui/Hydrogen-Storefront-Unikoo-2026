@@ -1146,3 +1146,229 @@ button.reset:hover:not(:has(> *)) {
   font-size: 0.875rem;
   margin: 0;
 }
+
+/*
+* --------------------------------------------------
+* Product page (PDP)
+* --------------------------------------------------*/
+.product-page {
+  padding-bottom: 3rem;
+}
+
+.product-layout {
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: 1fr;
+  margin-bottom: 2.5rem;
+
+  @media (min-width: 62em) {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Gallery ----------------------------------------------------------- */
+.product-gallery-main {
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-line);
+
+  &.empty {
+    aspect-ratio: 1 / 1;
+  }
+}
+
+.product-gallery-thumbs {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  overflow-x: auto;
+}
+
+.product-gallery-thumb {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0.25rem;
+
+  img {
+    display: block;
+    height: 64px;
+    object-fit: cover;
+    width: 64px;
+  }
+
+  &.is-active {
+    border-color: var(--color-brand-600);
+  }
+}
+
+/* Detail column ----------------------------------------------------- */
+.product-detail-col {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.product-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.product-b2b-info {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.product-b2b-brand {
+  font-size: 0.6875rem;
+}
+
+.product-b2b-sku {
+  color: var(--color-muted);
+  font-size: 0.8125rem;
+
+  .label {
+    font-size: inherit;
+    text-transform: none;
+  }
+}
+
+.product-price-block {
+  align-items: baseline;
+  display: flex;
+  gap: 0.75rem;
+}
+
+.product-price-current {
+  color: var(--color-ink);
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.product-price-compare {
+  color: var(--color-muted);
+  font-size: 1rem;
+}
+
+/* Description ------------------------------------------------------- */
+.product-description {
+  margin-top: 0.5rem;
+}
+
+/* Tags -------------------------------------------------------------- */
+.product-tags {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+
+  .label {
+    margin: 0;
+  }
+}
+
+.product-tags-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+/* Documents --------------------------------------------------------- */
+.product-documents {
+  margin-top: 0.5rem;
+}
+
+.document-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Specs ------------------------------------------------------------- */
+.product-specs {
+  margin-bottom: 2rem;
+}
+
+/* B2B rules (quantity + price breaks) ------------------------------- */
+.product-b2b-rules {
+  margin-top: 0.5rem;
+
+  .section-heading h2,
+  .section-heading h3 {
+    font-size: 1rem;
+  }
+}
+
+/* Product form overrides -------------------------------------------- */
+.product-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.product-options {
+  h5 {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem;
+    text-transform: uppercase;
+  }
+}
+
+.product-options-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.product-options-item {
+  align-items: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line-strong);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  min-height: 2.25rem;
+  min-width: 2.25rem;
+  padding: 0.375rem 0.75rem;
+
+  &[disabled] {
+    cursor: not-allowed;
+    opacity: 0.35;
+  }
+
+  &:not([disabled]):hover {
+    border-color: var(--color-brand-600);
+  }
+}
+
+.product-option-label-swatch {
+  border-radius: 2px;
+  height: 1.5rem;
+  overflow: hidden;
+  width: 1.5rem;
+
+  img {
+    height: 100%;
+    object-fit: cover;
+    width: 100%;
+  }
+}
+
+/* Related products -------------------------------------------------- */
+.related-products .section-heading {
+  margin-bottom: 1.25rem;
+}
