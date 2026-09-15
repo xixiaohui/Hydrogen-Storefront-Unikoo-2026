@@ -202,7 +202,24 @@
 
 验收：`npm run build` 成功；首页 SSR 输出含 `site-footer`、`footer-contact`、`footer-compliance`、`footer-nav`。
 
-## 14. 后台（Shopify Admin）前置依赖
+## 14. 已落地：P7 Quick Order
+
+| 文件 | 说明 |
+| --- | --- |
+| `app/lib/quick-order.ts` | 解析 CSV/文本输入（`SKU,quantity` 每行一个，支持逗号/分号/Tab 分隔）；`buildSkuQuery` 分批构建 `sku:A OR sku:B` 查询；`resolveLines` 把解析结果分为 resolved / unresolved |
+| `app/routes/quick-order.tsx`（+ `($locale)` 副本） | action 处理：解析输入 → 分批（5 个/批）用 Storefront `search` 查询 SKU → 返回 resolved/unresolved |
+| `app/components/quick-order/QuickOrderForm.tsx` | 工业风表单：textarea 输入 + "Resolve SKUs" 按钮 + 结果表格（SKU/产品/数量/单价/行总价）+ CartForm 一键加入购物车 + 未找到 SKU 列表 |
+| `app/styles/app.css` | Quick Order 样式：等宽字体 textarea、结果表格、错误/未找到列表 |
+
+约束：
+- SKU 查询用 `sku:A OR sku:B` 语法，每批 5 个 SKU 避免查询长度限制
+- 未匹配 SKU 单独列出，不阻塞已匹配项加入购物车
+- 所有查询仍带 buyer 上下文，B2B 缓存隔离
+
+验收：`codegen` + `typegen` + `tsc --noEmit` 无错误；`npm run lint` 0 error 0 warning；`npm run build` 成功；
+预览下 `/quick-order` 返回 200 且含表单与 textarea。
+
+## 15. 后台（Shopify Admin）前置依赖
 
 规格 §68：产品、集合、导航、客户、公司/公司地点、目录、Markets、Locations，
 以及 Metaobject 定义：`Hero`、`MegaMenuItem`、`Brand`、`Resource`、`TechnicalDocument`、`Location`。

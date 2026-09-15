@@ -1329,6 +1329,29 @@ export type ProductRecommendationsQuery = {
   >;
 };
 
+export type QuickOrderQueryVariables = StorefrontAPI.Exact<{
+  query: StorefrontAPI.Scalars['String']['input'];
+  country?: StorefrontAPI.InputMaybe<StorefrontAPI.CountryCode>;
+  language?: StorefrontAPI.InputMaybe<StorefrontAPI.LanguageCode>;
+  buyer?: StorefrontAPI.InputMaybe<StorefrontAPI.BuyerInput>;
+}>;
+
+export type QuickOrderQuery = {
+  products: {
+    nodes: Array<
+      Pick<StorefrontAPI.Product, 'handle' | 'title'> & {
+        variants: {
+          nodes: Array<
+            Pick<StorefrontAPI.ProductVariant, 'id' | 'sku'> & {
+              price: Pick<StorefrontAPI.MoneyV2, 'amount' | 'currencyCode'>;
+            }
+          >;
+        };
+      }
+    >;
+  };
+};
+
 export type SearchProductFragment = {__typename: 'Product'} & Pick<
   StorefrontAPI.Product,
   | 'handle'
@@ -1629,6 +1652,10 @@ interface GeneratedQueryTypes {
   '#graphql\n  query ProductRecommendations(\n    $country: CountryCode\n    $language: LanguageCode\n    $buyer: BuyerInput\n    $productId: ID!\n  ) @inContext(country: $country, language: $language, buyer: $buyer) {\n    productRecommendations(productId: $productId) {\n      ...ProductRecommendation\n    }\n  }\n  #graphql\n  fragment ProductRecommendation on Product {\n    id\n    title\n    vendor\n    handle\n    featuredImage {\n      id\n      url\n      altText\n      width\n      height\n    }\n    priceRange {\n      minVariantPrice {\n        amount\n        currencyCode\n      }\n    }\n  }\n\n': {
     return: ProductRecommendationsQuery;
     variables: ProductRecommendationsQueryVariables;
+  };
+  '#graphql\n  query QuickOrder(\n    $query: String!\n    $country: CountryCode\n    $language: LanguageCode\n    $buyer: BuyerInput\n  ) @inContext(country: $country, language: $language, buyer: $buyer) {\n    products(first: 250, query: $query) {\n      nodes {\n        handle\n        title\n        variants(first: 250) {\n          nodes {\n            id\n            sku\n            price {\n              amount\n              currencyCode\n            }\n          }\n        }\n      }\n    }\n  }\n': {
+    return: QuickOrderQuery;
+    variables: QuickOrderQueryVariables;
   };
   '#graphql\n  query SkuSearch(\n    $query: String!\n    $country: CountryCode\n    $language: LanguageCode\n    $buyer: BuyerInput\n  ) @inContext(country: $country, language: $language, buyer: $buyer) {\n    products(first: 2, query: $query) {\n      nodes {\n        handle\n      }\n    }\n  }\n': {
     return: SkuSearchQuery;
