@@ -52,6 +52,21 @@ export const CART_QUERY_FRAGMENT = `#graphql
           name
           value
         }
+        # @description Add B2B quantity rules and price breaks
+        quantityRule {
+          maximum
+          minimum
+          increment
+        }
+        quantityPriceBreaks(first: 5) {
+          nodes {
+            minimumQuantity
+            price {
+              amount
+              currencyCode
+            }
+          }
+        }
       }
     }
     parentRelationship {
@@ -106,6 +121,21 @@ export const CART_QUERY_FRAGMENT = `#graphql
         selectedOptions {
           name
           value
+        }
+        # @description Add B2B quantity rules and price breaks
+        quantityRule {
+          maximum
+          minimum
+          increment
+        }
+        quantityPriceBreaks(first: 5) {
+          nodes {
+            minimumQuantity
+            price {
+              amount
+              currencyCode
+            }
+          }
         }
       }
     }

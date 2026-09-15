@@ -16,8 +16,37 @@ import {FOOTER_QUERY, HEADER_QUERY} from '~/lib/fragments';
 import resetStyles from '~/styles/reset.css?url';
 import appStyles from '~/styles/app.css?url';
 import {PageLayout} from './components/PageLayout';
+// @description Import B2B components and types for company location management
+import {B2BLocationProvider} from '~/components/B2BLocationProvider';
+import type {
+  Company,
+  CompanyAddress,
+  CompanyLocation,
+  Maybe,
+} from '@shopify/hydrogen/customer-account-api-types';
 
 export type RootLoader = typeof loader;
+
+// @description Define B2B customer company types
+export type CustomerCompanyLocation = Pick<CompanyLocation, 'name' | 'id'> & {
+  shippingAddress?:
+    | Maybe<Pick<CompanyAddress, 'countryCode' | 'formattedAddress'>>
+    | undefined;
+};
+
+export type CustomerCompanyLocationConnection = {
+  node: CustomerCompanyLocation;
+};
+
+export type CustomerCompany =
+  | Maybe<
+      Pick<Company, 'name' | 'id'> & {
+        locations: {
+          edges: CustomerCompanyLocationConnection[];
+        };
+      }
+    >
+  | undefined;
 
 /**
  * This is important to avoid re-fetching root queries on sub-navigations
@@ -176,9 +205,12 @@ export default function App() {
       shop={data.shop}
       consent={data.consent}
     >
-      <PageLayout {...data}>
-        <Outlet />
-      </PageLayout>
+      {/* @description Wrap PageLayout with B2B location provider */}
+      <B2BLocationProvider>
+        <PageLayout {...data}>
+          <Outlet />
+        </PageLayout>
+      </B2BLocationProvider>
     </Analytics.Provider>
   );
 }

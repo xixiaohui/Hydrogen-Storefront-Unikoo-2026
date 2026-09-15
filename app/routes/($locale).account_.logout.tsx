@@ -7,5 +7,10 @@ export async function loader() {
 }
 
 export async function action({context}: Route.ActionArgs) {
+  // @description Clear B2B company location on logout
+  await context.cart.updateBuyerIdentity({
+    companyLocationId: null,
+    customerAccessToken: null,
+  });
   return context.customerAccount.logout();
 }

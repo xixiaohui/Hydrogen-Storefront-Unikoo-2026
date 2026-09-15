@@ -7,6 +7,9 @@ import {
 } from '@shopify/hydrogen';
 import type {HeaderQuery, CartApiQueryFragment} from 'storefrontapi.generated';
 import {useAside} from '~/components/Aside';
+// @description Import B2B types and hooks for company location management
+import {type CustomerCompanyLocationConnection} from '~/root';
+import {useB2BLocation} from '~/components/B2BLocationProvider';
 
 interface HeaderProps {
   header: HeaderQuery;
@@ -91,6 +94,8 @@ export function HeaderMenu({
           </NavLink>
         );
       })}
+      {/* @description Add B2B location selector to header navigation */}
+      <ChangeLocation />
     </nav>
   );
 }
@@ -173,6 +178,30 @@ function CartBanner() {
   const originalCart = useAsyncValue() as CartApiQueryFragment | null;
   const cart = useOptimisticCart(originalCart);
   return <CartBadge count={cart?.totalQuantity ?? 0} />;
+}
+
+// @description Add B2B location change button for company location selection
+function ChangeLocation() {
+  const {company, companyLocationId} = useB2BLocation();
+  const {open} = useAside();
+
+  const locations = company?.locations?.edges
+    ? company.locations.edges.map(
+        (location: CustomerCompanyLocationConnection) => {
+          return {...location.node};
+        },
+      )
+    : [];
+
+  if (locations.length <= 1 || !company) return null;
+
+  return (
+    <button className="reset" onClick={() => open('location')}>
+      {locations.find(
+        (companyLocation) => companyLocation.id === companyLocationId,
+      )?.name || 'Select Location'}
+    </button>
+  );
 }
 
 const FALLBACK_HEADER_MENU = {

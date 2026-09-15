@@ -12,6 +12,19 @@ import {ProductPrice} from '~/components/ProductPrice';
 import {ProductImage} from '~/components/ProductImage';
 import {ProductForm} from '~/components/ProductForm';
 import {redirectIfHandleIsLocalized} from '~/lib/redirect';
+// @description Import B2B components for quantity rules and price breaks
+import {QuantityRules, hasQuantityRules} from '~/components/QuantityRules';
+import {PriceBreaks} from '~/components/PriceBreaks';
+
+// @description Define B2B buyer variables type for contextualized queries
+type BuyerVariables =
+  | {
+      buyer: {
+        companyLocationId: string;
+        customerAccessToken: string;
+      };
+    }
+  | {};
 
 export const meta: Route.MetaFunction = ({data}) => {
   return [
@@ -24,11 +37,24 @@ export const meta: Route.MetaFunction = ({data}) => {
 };
 
 export async function loader(args: Route.LoaderArgs) {
+  // @description Get B2B buyer context for contextualized product queries
+  const buyer = await args.context.customerAccount.getBuyer();
+
+  const buyerVariables: BuyerVariables =
+    buyer?.companyLocationId && buyer?.customerAccessToken
+      ? {
+          buyer: {
+            companyLocationId: buyer.companyLocationId,
+            customerAccessToken: buyer.customerAccessToken,
+          },
+        }
+      : {};
+
   // Start fetching non-critical data without blocking time to first byte
   const deferredData = loadDeferredData(args);
 
   // Await the critical data required to render initial state of the page
-  const criticalData = await loadCriticalData(args);
+  const criticalData = await loadCriticalData({...args, buyerVariables});
 
   return {...deferredData, ...criticalData};
 }
@@ -37,7 +63,12 @@ export async function loader(args: Route.LoaderArgs) {
  * Load data necessary for rendering content above the fold. This is the critical data
  * needed to render the page. If it's unavailable, the whole page should 400 or 500 error.
  */
-async function loadCriticalData({context, params, request}: Route.LoaderArgs) {
+async function loadCriticalData({
+  context,
+  params,
+  request,
+  buyerVariables,
+}: Route.LoaderArgs & {buyerVariables: BuyerVariables}) {
   const {handle} = params;
   const {storefront} = context;
 
@@ -47,7 +78,15 @@ async function loadCriticalData({context, params, request}: Route.LoaderArgs) {
 
   const [{product}] = await Promise.all([
     storefront.query(PRODUCT_QUERY, {
-      variables: {handle, selectedOptions: getSelectedProductOptions(request)},
+      variables: {
+        handle,
+        selectedOptions: getSelectedProductOptions(request),
+        ...buyerVariables,
+      },
+      // @description Never share B2B contextualized prices between customers
+      ...('buyer' in buyerVariables
+        ? {cache: storefront.CacheNone()}
+        : {cache: storefront.CacheShort()}),
     }),
     // Add other queries here, so that they are loaded in parallel
   ]);
@@ -110,9 +149,30 @@ export default function Product() {
         <ProductForm
           productOptions={productOptions}
           selectedVariant={selectedVariant}
+          // @description Add to cart respects the B2B minimum quantity
+          quantity={
+            selectedVariant?.quantityRule?.minimum ||
+            selectedVariant?.quantityRule?.increment ||
+            1
+          }
         />
         <br />
+        {/* @description Display B2B quantity rules if they exist */}
+        {hasQuantityRules(selectedVariant?.quantityRule) ? (
+          <QuantityRules
+            maximum={selectedVariant?.quantityRule.maximum}
+            minimum={selectedVariant?.quantityRule.minimum}
+            increment={selectedVariant?.quantityRule.increment}
+          />
+        ) : null}
         <br />
+        {/* @description Display B2B price breaks if they exist */}
+        {selectedVariant?.quantityPriceBreaks?.nodes &&
+        selectedVariant?.quantityPriceBreaks?.nodes?.length > 0 ? (
+          <PriceBreaks
+            priceBreaks={selectedVariant?.quantityPriceBreaks?.nodes}
+          />
+        ) : null}
         <p>
           <strong>Description</strong>
         </p>
@@ -167,6 +227,21 @@ const PRODUCT_VARIANT_FRAGMENT = `#graphql
       name
       value
     }
+    # @description Add B2B quantity rules and price breaks to variant fragment
+    quantityRule {
+      maximum
+      minimum
+      increment
+    }
+    quantityPriceBreaks(first: 5) {
+      nodes {
+        minimumQuantity
+        price {
+          amount
+          currencyCode
+        }
+      }
+    }
     sku
     title
     unitPrice {
@@ -220,10 +295,11 @@ const PRODUCT_FRAGMENT = `#graphql
 const PRODUCT_QUERY = `#graphql
   query Product(
     $country: CountryCode
+    $buyer: BuyerInput
     $handle: String!
     $language: LanguageCode
     $selectedOptions: [SelectedOptionInput!]!
-  ) @inContext(country: $country, language: $language) {
+  ) @inContext(country: $country, language: $language, buyer: $buyer) {
     product(handle: $handle) {
       ...Product
     }

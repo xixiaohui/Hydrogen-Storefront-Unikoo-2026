@@ -11,9 +11,11 @@ import type {ProductFragment} from 'storefrontapi.generated';
 export function ProductForm({
   productOptions,
   selectedVariant,
+  quantity,
 }: {
   productOptions: MappedProductOptions[];
   selectedVariant: ProductFragment['selectedOrFirstAvailableVariant'];
+  quantity?: number;
 }) {
   const navigate = useNavigate();
   const {open} = useAside();
@@ -111,7 +113,8 @@ export function ProductForm({
             ? [
                 {
                   merchandiseId: selectedVariant.id,
-                  quantity: 1,
+                  // @description Use the B2B quantity (minimum/increment) or 1
+                  quantity: quantity || 1,
                   selectedVariant,
                 },
               ]
