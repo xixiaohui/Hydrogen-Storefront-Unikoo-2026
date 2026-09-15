@@ -1,6 +1,14 @@
 /**
- * Configure Tailwind v4 in this file using CSS variables and directives:
- * https://tailwindcss.com/docs/v4-beta#css-first-configuration
+ * Tailwind v4 entry point.
+ *
+ * - tokens.css      design tokens (emitted as :root custom properties)
+ * - components.css  semantic component classes used across the storefront
+ *
+ * Imported from `app/root.tsx` so that Tailwind utilities are available
+ * everywhere. Preflight is included; the skeleton `reset.css` stays loaded
+ * first and is compatible with it.
  */
 
 @import 'tailwindcss';
+@import './tokens.css';
+@import './components.css';

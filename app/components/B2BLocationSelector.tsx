@@ -51,7 +51,7 @@ export function LocationAside() {
   const selectLocation = (locationId: string) => {
     setModalOpen(false);
     close();
-    fetcher.submit({companyLocationId: locationId}, {
+    void fetcher.submit({companyLocationId: locationId}, {
       method: 'POST',
       action: '/b2blocations',
     });

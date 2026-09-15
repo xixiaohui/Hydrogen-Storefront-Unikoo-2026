@@ -1,0 +1,64 @@
+/**
+ * Design tokens (Tailwind v4 CSS-first configuration).
+ *
+ * Variables declared inside `@theme` are emitted as `:root` custom properties,
+ * so the same values are usable from Tailwind utilities (`bg-brand-600`) and
+ * from plain CSS (`var(--color-brand-600)`).
+ *
+ * This file is the single source of truth for the visual language of the
+ * industrial / B2B storefront. Do not hardcode colors inside components.
+ */
+
+@theme {
+  --font-sans:
+    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+
+  /* Brand (industrial blue) */
+  --color-brand-50: #eef5fc;
+  --color-brand-100: #d6e7f7;
+  --color-brand-200: #aecdee;
+  --color-brand-300: #7fb2e5;
+  --color-brand-400: #4a8fd4;
+  --color-brand-500: #1c6fc0;
+  --color-brand-600: #0057b8;
+  --color-brand-700: #00468f;
+  --color-brand-800: #003570;
+  --color-brand-900: #00264f;
+
+  /* Accent (industrial orange, used for price / CTA highlights) */
+  --color-accent-500: #f26522;
+  --color-accent-600: #d8510f;
+
+  /* Neutrals */
+  --color-ink: #0f172a;
+  --color-body: #334154;
+  --color-muted: #5b6b7f;
+  --color-line: #dfe6ee;
+  --color-line-strong: #c3cfdc;
+  --color-surface: #ffffff;
+  --color-surface-alt: #f4f7fa;
+
+  /* Status */
+  --color-success: #157347;
+  --color-warning: #b45309;
+  --color-danger: #b42318;
+
+  /* Layout metrics */
+  --header-topbar-height: 2.25rem;
+  --header-height: 4.5rem;
+  --container-max: 90rem;
+
+  /* Elevation */
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-pop: 0 12px 32px rgba(15, 23, 42, 0.16);
+}
+
+/**
+ * Semantic aliases consumed by the legacy skeleton CSS (app.css) and by
+ * hand written rules in components.css.
+ */
+:root {
+  --color-dark: var(--color-ink);
+  --color-light: var(--color-surface);
+}

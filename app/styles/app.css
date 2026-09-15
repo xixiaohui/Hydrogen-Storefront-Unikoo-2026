@@ -3,9 +3,7 @@
   --cart-aside-summary-height-with-discount: 300px;
   --cart-aside-summary-height: 250px;
   --grid-item-width: 355px;
-  --header-height: 64px;
-  --color-dark: #000;
-  --color-light: #fff;
+  /* --header-height, --color-dark and --color-light come from tokens.css */
 }
 
 img {
@@ -690,4 +688,235 @@ button.reset:hover:not(:has(> *)) {
   .table-item {
     font-weight: 400;
   }
+}
+
+/*
+* --------------------------------------------------
+* Collection: header, toolbar, filters, product cards
+* --------------------------------------------------*/
+.collection-page {
+  padding-bottom: 3rem;
+}
+
+.collection-header h1 {
+  font-size: 1.75rem;
+  margin: 0 0 0.5rem;
+  text-transform: uppercase;
+}
+
+.collection-description {
+  color: var(--color-muted);
+  margin: 0;
+  max-width: 60ch;
+}
+
+.collection-toolbar {
+  align-items: center;
+  border-block: 1px solid var(--color-line);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: space-between;
+  margin-block: 1rem 1.5rem;
+  padding-block: 0.625rem;
+}
+
+.collection-count {
+  color: var(--color-muted);
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.sort-form {
+  align-items: center;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.sort-form .label {
+  margin: 0;
+}
+
+.sort-select {
+  min-width: 12rem;
+  width: auto;
+}
+
+.collection-layout {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: 1fr;
+
+  @media (min-width: 62em) {
+    grid-template-columns: 16rem 1fr;
+  }
+}
+
+.filters {
+  align-self: start;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  padding: 1rem;
+
+  @media (min-width: 62em) {
+    position: sticky;
+    top: calc(var(--header-height) + var(--header-topbar-height) + 1rem);
+  }
+}
+
+.filters-header {
+  align-items: baseline;
+  border-bottom: 1px solid var(--color-line);
+  display: flex;
+  gap: 0.5rem;
+  justify-content: space-between;
+  padding-bottom: 0.5rem;
+}
+
+.filters-title {
+  font-size: 0.875rem;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.filters-clear {
+  font-size: 0.75rem;
+}
+
+.filter-group {
+  border-bottom: 1px solid var(--color-line);
+  padding-block: 0.75rem;
+
+  &:last-child {
+    border-bottom: 0;
+  }
+}
+
+.filter-group-toggle {
+  background: none;
+  border: 0;
+  cursor: pointer;
+  display: flex;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  justify-content: space-between;
+  padding: 0;
+  text-transform: uppercase;
+  width: 100%;
+}
+
+.filter-values {
+  display: grid;
+  gap: 0.375rem;
+  list-style: none;
+  margin: 0.625rem 0 0;
+  padding: 0;
+}
+
+.filter-value {
+  align-items: center;
+  color: var(--color-body);
+  display: flex;
+  font-size: 0.8125rem;
+  gap: 0.5rem;
+  text-decoration: none;
+
+  &:hover {
+    color: var(--color-brand-600);
+  }
+}
+
+.filter-checkbox {
+  border: 1px solid var(--color-line-strong);
+  height: 0.875rem;
+  width: 0.875rem;
+}
+
+.filter-value.is-selected {
+  color: var(--color-ink);
+  font-weight: 600;
+
+  .filter-checkbox {
+    background: var(--color-brand-600);
+    border-color: var(--color-brand-600);
+  }
+}
+
+.filter-value-count {
+  color: var(--color-muted);
+  margin-left: auto;
+}
+
+.filter-price {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.625rem;
+}
+
+.products-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  @media (min-width: 48em) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  @media (min-width: 75em) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.product-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  text-decoration: none;
+
+  &:hover {
+    border-color: var(--color-brand-600);
+  }
+}
+
+.product-card-media {
+  background: var(--color-surface-alt);
+}
+
+.product-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.75rem;
+}
+
+.product-card-vendor {
+  color: var(--color-muted);
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.product-card-title {
+  color: var(--color-ink);
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.product-card-sku {
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  margin: 0;
+}
+
+.product-card-price {
+  color: var(--color-ink);
+  font-weight: 700;
+  margin: 0.25rem 0 0;
 }

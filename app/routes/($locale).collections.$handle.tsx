@@ -1,11 +1,19 @@
-import {redirect, useLoaderData} from 'react-router';
+import {redirect, useLoaderData, useSearchParams} from 'react-router';
 import type {Route} from './+types/collections.$handle';
 import {getPaginationVariables, Analytics} from '@shopify/hydrogen';
 import {PaginatedResourceSection} from '~/components/PaginatedResourceSection';
 import {redirectIfHandleIsLocalized} from '~/lib/redirect';
 import {ProductItem} from '~/components/ProductItem';
-import type {ProductItemFragment} from 'storefrontapi.generated';
+import {Breadcrumbs} from '~/components/Breadcrumbs';
+import {FilterSidebar} from '~/components/collection/FilterSidebar';
+import {SortSelect} from '~/components/collection/SortSelect';
+import {
+  getSortValues,
+  parseProductFilters,
+  type SortKey,
+} from '~/lib/filters';
 import {b2bCacheOptions, getBuyerVariables} from '~/lib/b2b';
+import type {ProductItemFragment} from 'storefrontapi.generated';
 
 export const meta: Route.MetaFunction = ({data}) => {
   return [{title: `Hydrogen | ${data?.collection.title ?? ''} Collection`}];
@@ -28,20 +36,31 @@ export async function loader(args: Route.LoaderArgs) {
 async function loadCriticalData({context, params, request}: Route.LoaderArgs) {
   const {handle} = params;
   const {storefront} = context;
-  const paginationVariables = getPaginationVariables(request, {
-    pageBy: 8,
-  });
 
   if (!handle) {
     throw redirect('/collections');
   }
+
+  const searchParams = new URL(request.url).searchParams;
+  const paginationVariables = getPaginationVariables(request, {
+    pageBy: 24,
+  });
+  const filters = parseProductFilters(searchParams);
+  const {sortKey, reverse} = getSortValues(searchParams.get('sort'));
 
   // @description Contextualize the query so B2B customers see their catalog
   const buyerVariables = await getBuyerVariables(context);
 
   const [{collection}] = await Promise.all([
     storefront.query(COLLECTION_QUERY, {
-      variables: {handle, ...paginationVariables, ...buyerVariables},
+      variables: {
+        handle,
+        filters,
+        sortKey,
+        reverse,
+        ...paginationVariables,
+        ...buyerVariables,
+      },
       ...b2bCacheOptions(storefront, buyerVariables),
     }),
     // Add other queries here, so that they are loaded in parallel
@@ -56,14 +75,12 @@ async function loadCriticalData({context, params, request}: Route.LoaderArgs) {
   // The API handle might be localized, so redirect to the localized handle
   redirectIfHandleIsLocalized(request, {handle, data: collection});
 
-  return {
-    collection,
-  };
+  return {collection};
 }
 
 /**
- * Load data for rendering content below the fold. This data is deferred and will be
- * fetched after the initial page load. If it's unavailable, the page should still 200.
+ * Load data for rendering content below the fold. This data is deferred and will
+ * be fetched after the initial page load. If it's unavailable, the page should still 200.
  * Make sure to not throw any errors here, as it will cause the page to 500.
  */
 function loadDeferredData({context}: Route.LoaderArgs) {
@@ -72,31 +89,63 @@ function loadDeferredData({context}: Route.LoaderArgs) {
 
 export default function Collection() {
   const {collection} = useLoaderData<typeof loader>();
+  const [searchParams] = useSearchParams();
+  const sort = getSortValues(searchParams.get('sort')).key as SortKey;
+  const products = collection.products;
 
   return (
-    <div className="collection">
-      <h1>{collection.title}</h1>
-      <p className="collection-description">{collection.description}</p>
-      <PaginatedResourceSection<ProductItemFragment>
-        connection={collection.products}
-        resourcesClassName="products-grid"
-      >
-        {({node: product, index}) => (
-          <ProductItem
-            key={product.id}
-            product={product}
-            loading={index < 8 ? 'eager' : undefined}
-          />
-        )}
-      </PaginatedResourceSection>
-      <Analytics.CollectionView
-        data={{
-          collection: {
-            id: collection.id,
-            handle: collection.handle,
-          },
-        }}
-      />
+    <div className="collection-page">
+      <div className="container-page">
+        <Breadcrumbs
+          crumbs={[
+            {label: 'Collections', to: '/collections'},
+            {label: collection.title},
+          ]}
+        />
+
+        <header className="collection-header">
+          <h1>{collection.title}</h1>
+          {collection.description && (
+            <p className="collection-description">{collection.description}</p>
+          )}
+        </header>
+
+        <div className="collection-toolbar">
+          <p className="collection-count">
+            {products.nodes.length} product
+            {products.nodes.length === 1 ? '' : 's'}
+          </p>
+          <SortSelect current={sort} />
+        </div>
+
+        <div className="collection-layout">
+          <FilterSidebar filters={products.filters} />
+
+          <div className="collection-results">
+            <PaginatedResourceSection<ProductItemFragment>
+              connection={products}
+              resourcesClassName="products-grid"
+            >
+              {({node: product, index}) => (
+                <ProductItem
+                  key={product.id}
+                  product={product}
+                  loading={index < 8 ? 'eager' : undefined}
+                />
+              )}
+            </PaginatedResourceSection>
+          </div>
+        </div>
+
+        <Analytics.CollectionView
+          data={{
+            collection: {
+              id: collection.id,
+              handle: collection.handle,
+            },
+          }}
+        />
+      </div>
     </div>
   );
 }
@@ -110,12 +159,18 @@ const PRODUCT_ITEM_FRAGMENT = `#graphql
     id
     handle
     title
+    vendor
     featuredImage {
       id
       altText
       url
       width
       height
+    }
+    variants(first: 1) {
+      nodes {
+        sku
+      }
     }
     priceRange {
       minVariantPrice {
@@ -136,6 +191,9 @@ const COLLECTION_QUERY = `#graphql
     $country: CountryCode
     $language: LanguageCode
     $buyer: BuyerInput
+    $filters: [ProductFilter!]
+    $sortKey: ProductCollectionSortKeys
+    $reverse: Boolean
     $first: Int
     $last: Int
     $startCursor: String
@@ -150,8 +208,21 @@ const COLLECTION_QUERY = `#graphql
         first: $first,
         last: $last,
         before: $startCursor,
-        after: $endCursor
+        after: $endCursor,
+        filters: $filters,
+        sortKey: $sortKey,
+        reverse: $reverse
       ) {
+        filters {
+          id
+          label
+          type
+          values {
+            id
+            label
+            count
+          }
+        }
         nodes {
           ...ProductItem
         }

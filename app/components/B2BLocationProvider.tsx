@@ -63,15 +63,14 @@ export function B2BLocationProvider({
     if (!initialized.current) {
       initialized.current = true;
       previousLocationId.current = companyLocationId;
-      if (companyLocationId) revalidator.revalidate();
+      if (companyLocationId) void revalidator.revalidate();
       return;
     }
 
     if (companyLocationId && companyLocationId !== previousLocationId.current) {
       previousLocationId.current = companyLocationId;
-      revalidator.revalidate();
+      void revalidator.revalidate();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetcher.data, revalidator]);
 
   const value = useMemo<B2BLocationContextValue>(() => {
