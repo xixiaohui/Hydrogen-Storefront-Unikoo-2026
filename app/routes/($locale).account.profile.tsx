@@ -21,7 +21,6 @@ export const meta: Route.MetaFunction = () => {
 
 export async function loader({context}: Route.LoaderArgs) {
   await context.customerAccount.handleAuthStatus();
-
   return {};
 }
 
@@ -38,15 +37,12 @@ export async function action({request, context}: Route.ActionArgs) {
     const customer: CustomerUpdateInput = {};
     const validInputKeys = ['firstName', 'lastName'] as const;
     for (const [key, value] of form.entries()) {
-      if (!validInputKeys.includes(key as any)) {
-        continue;
-      }
+      if (!validInputKeys.includes(key as any)) continue;
       if (typeof value === 'string' && value.length) {
         customer[key as (typeof validInputKeys)[number]] = value;
       }
     }
 
-    // update customer and possibly password
     const {data, errors} = await customerAccount.mutate(
       CUSTOMER_UPDATE_MUTATION,
       {
@@ -72,9 +68,7 @@ export async function action({request, context}: Route.ActionArgs) {
   } catch (error: any) {
     return data(
       {error: error.message, customer: null},
-      {
-        status: 400,
-      },
+      {status: 400},
     );
   }
 }
@@ -87,47 +81,61 @@ export default function AccountProfile() {
 
   return (
     <div className="account-profile">
-      <h2>My profile</h2>
-      <br />
-      <Form method="PUT">
-        <legend>Personal information</legend>
-        <fieldset>
-          <label htmlFor="firstName">First name</label>
-          <input
-            id="firstName"
-            name="firstName"
-            type="text"
-            autoComplete="given-name"
-            placeholder="First name"
-            aria-label="First name"
-            defaultValue={customer.firstName ?? ''}
-            minLength={2}
-          />
-          <label htmlFor="lastName">Last name</label>
-          <input
-            id="lastName"
-            name="lastName"
-            type="text"
-            autoComplete="family-name"
-            placeholder="Last name"
-            aria-label="Last name"
-            defaultValue={customer.lastName ?? ''}
-            minLength={2}
-          />
-        </fieldset>
-        {action?.error ? (
-          <p>
-            <mark>
-              <small>{action.error}</small>
-            </mark>
-          </p>
-        ) : (
-          <br />
-        )}
-        <button type="submit" disabled={state !== 'idle'}>
-          {state !== 'idle' ? 'Updating' : 'Update'}
-        </button>
-      </Form>
+      <div className="section-heading">
+        <h2>Profile</h2>
+      </div>
+
+      <div className="card account-profile-card">
+        <div className="card-body">
+          <h3 className="section-heading">
+            <span>Personal information</span>
+          </h3>
+
+          <Form method="PUT" className="account-profile-form">
+            <div className="field">
+              <label className="label" htmlFor="firstName">
+                First name
+              </label>
+              <input
+                autoComplete="given-name"
+                className="input"
+                defaultValue={customer.firstName ?? ''}
+                id="firstName"
+                name="firstName"
+                placeholder="First name"
+                type="text"
+              />
+            </div>
+
+            <div className="field">
+              <label className="label" htmlFor="lastName">
+                Last name
+              </label>
+              <input
+                autoComplete="family-name"
+                className="input"
+                defaultValue={customer.lastName ?? ''}
+                id="lastName"
+                name="lastName"
+                placeholder="Last name"
+                type="text"
+              />
+            </div>
+
+            {action?.error && (
+              <p className="account-error">{action.error}</p>
+            )}
+
+            <button
+              className="btn btn-primary"
+              disabled={state !== 'idle'}
+              type="submit"
+            >
+              {state !== 'idle' ? 'Saving…' : 'Save changes'}
+            </button>
+          </Form>
+        </div>
+      </div>
     </div>
   );
 }

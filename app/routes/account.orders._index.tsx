@@ -1,11 +1,10 @@
+import {useRef} from 'react';
 import {
   Link,
   useLoaderData,
-  useNavigation,
   useSearchParams,
 } from 'react-router';
 import type {Route} from './+types/account.orders._index';
-import {useRef} from 'react';
 import {
   Money,
   getPaginationVariables,
@@ -63,7 +62,11 @@ export default function Orders() {
   const {orders} = customer;
 
   return (
-    <div className="orders">
+    <div className="account-orders">
+      <div className="section-heading">
+        <h2>Orders</h2>
+      </div>
+
       <OrderSearchForm currentFilters={filters} />
       <OrdersTable orders={orders} filters={filters} />
     </div>
@@ -80,10 +83,10 @@ function OrdersTable({
   const hasFilters = !!(filters.name || filters.confirmationNumber);
 
   return (
-    <div className="acccount-orders" aria-live="polite">
+    <div className="account-orders-table" aria-live="polite">
       {orders?.nodes.length ? (
         <PaginatedResourceSection connection={orders}>
-          {({node: order}) => <OrderItem key={order.id} order={order} />}
+          {({node: order}) => <OrderRow key={order.id} order={order} />}
         </PaginatedResourceSection>
       ) : (
         <EmptyOrders hasFilters={hasFilters} />
@@ -94,22 +97,20 @@ function OrdersTable({
 
 function EmptyOrders({hasFilters = false}: {hasFilters?: boolean}) {
   return (
-    <div>
+    <div className="account-orders-empty">
       {hasFilters ? (
         <>
           <p>No orders found matching your search.</p>
-          <br />
-          <p>
-            <Link to="/account/orders">Clear filters →</Link>
-          </p>
+          <Link className="link-brand" to="/account/orders">
+            Clear filters →
+          </Link>
         </>
       ) : (
         <>
           <p>You haven&apos;t placed any orders yet.</p>
-          <br />
-          <p>
-            <Link to="/collections">Start Shopping →</Link>
-          </p>
+          <Link className="link-brand" to="/collections">
+            Start shopping →
+          </Link>
         </>
       )}
     </div>
@@ -122,10 +123,6 @@ function OrderSearchForm({
   currentFilters: OrderFilterParams;
 }) {
   const [searchParams, setSearchParams] = useSearchParams();
-  const navigation = useNavigation();
-  const isSearching =
-    navigation.state !== 'idle' &&
-    navigation.location?.pathname?.includes('orders');
   const formRef = useRef<HTMLFormElement>(null);
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -155,68 +152,72 @@ function OrderSearchForm({
       className="order-search-form"
       aria-label="Search orders"
     >
-      <fieldset className="order-search-fieldset">
-        <legend className="order-search-legend">Filter Orders</legend>
-
-        <div className="order-search-inputs">
-          <input
-            type="search"
-            name={ORDER_FILTER_FIELDS.NAME}
-            placeholder="Order #"
-            aria-label="Order number"
-            defaultValue={currentFilters.name || ''}
-            className="order-search-input"
-          />
-          <input
-            type="search"
-            name={ORDER_FILTER_FIELDS.CONFIRMATION_NUMBER}
-            placeholder="Confirmation #"
-            aria-label="Confirmation number"
-            defaultValue={currentFilters.confirmationNumber || ''}
-            className="order-search-input"
-          />
-        </div>
-
-        <div className="order-search-buttons">
-          <button type="submit" disabled={isSearching}>
-            {isSearching ? 'Searching' : 'Search'}
+      <div className="order-search-inputs">
+        <input
+          className="input order-search-input"
+          type="search"
+          name={ORDER_FILTER_FIELDS.NAME}
+          placeholder="Order #"
+          aria-label="Order number"
+          defaultValue={currentFilters.name || ''}
+        />
+        <input
+          className="input order-search-input"
+          type="search"
+          name={ORDER_FILTER_FIELDS.CONFIRMATION_NUMBER}
+          placeholder="Confirmation #"
+          aria-label="Confirmation number"
+          defaultValue={currentFilters.confirmationNumber || ''}
+        />
+        <button className="btn btn-secondary" type="submit">
+          Search
+        </button>
+        {hasFilters && (
+          <button
+            className="btn btn-ghost"
+            type="button"
+            onClick={() => {
+              setSearchParams(new URLSearchParams());
+              formRef.current?.reset();
+            }}
+          >
+            Clear
           </button>
-          {hasFilters && (
-            <button
-              type="button"
-              disabled={isSearching}
-              onClick={() => {
-                setSearchParams(new URLSearchParams());
-                formRef.current?.reset();
-              }}
-            >
-              Clear
-            </button>
-          )}
-        </div>
-      </fieldset>
+        )}
+      </div>
     </form>
   );
 }
 
-function OrderItem({order}: {order: OrderItemFragment}) {
+function OrderRow({order}: {order: OrderItemFragment}) {
   const fulfillmentStatus = flattenConnection(order.fulfillments)[0]?.status;
+
   return (
-    <>
-      <fieldset>
-        <Link to={`/account/orders/${btoa(order.id)}`}>
-          <strong>#{order.number}</strong>
-        </Link>
-        <p>{new Date(order.processedAt).toDateString()}</p>
-        {order.confirmationNumber && (
-          <p>Confirmation: {order.confirmationNumber}</p>
+    <Link
+      className="account-order-row"
+      to={`/account/orders/${btoa(order.id)}`}
+    >
+      <div className="account-order-cell">
+        <strong>#{order.number}</strong>
+        <span className="account-order-date">
+          {new Date(order.processedAt).toLocaleDateString()}
+        </span>
+      </div>
+
+      <div className="account-order-cell">
+        <span className="badge badge-success">{order.financialStatus}</span>
+        {fulfillmentStatus && (
+          <span className="badge">{fulfillmentStatus}</span>
         )}
-        <p>{order.financialStatus}</p>
-        {fulfillmentStatus && <p>{fulfillmentStatus}</p>}
+      </div>
+
+      <div className="account-order-cell account-order-total">
         <Money data={order.totalPrice} />
-        <Link to={`/account/orders/${btoa(order.id)}`}>View Order →</Link>
-      </fieldset>
-      <br />
-    </>
+      </div>
+
+      <div className="account-order-cell">
+        <span className="link-brand">View →</span>
+      </div>
+    </Link>
   );
 }

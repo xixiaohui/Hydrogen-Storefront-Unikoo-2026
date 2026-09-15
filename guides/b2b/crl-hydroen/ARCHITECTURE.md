@@ -219,7 +219,25 @@
 验收：`codegen` + `typegen` + `tsc --noEmit` 无错误；`npm run lint` 0 error 0 warning；`npm run build` 成功；
 预览下 `/quick-order` 返回 200 且含表单与 textarea。
 
-## 15. 后台（Shopify Admin）前置依赖
+## 15. 已落地：P8 Account Dashboard
+
+| 文件 | 说明 |
+| --- | --- |
+| `app/routes/account._index.tsx`（+ `($locale)` 副本） | B2B 仪表板首页：欢迎信息 + 快速操作（Quick Order/Orders/Addresses/Profile）+ 统计卡片（订单数/地址数/默认地址）+ 最近订单卡片网格（前 5 个） |
+| `app/routes/account.tsx` | 升级：工业风侧边栏导航（Dashboard/Orders/Addresses/Profile + Sign out）+ 主内容区 |
+| `app/routes/account.orders._index.tsx` | 升级：工业风订单行（订单号/日期/状态 badge/金额/查看链接）+ 搜索表单 |
+| `app/routes/account.profile.tsx` | 升级：工业风卡片表单（firstName/lastName），移除 email 字段（CustomerFragment 不包含） |
+| `app/routes/account.addresses.tsx` | 升级：工业风卡片表单 + 地址卡片网格（默认地址 badge） |
+| `app/styles/app.css` | 账户样式：侧边栏导航、仪表板统计、订单行、地址卡片 |
+
+约束：
+- 客户数据来自 Customer Account API（`customerAccount.query`），不缓存
+- 订单统计从 orders 查询聚合
+- 所有页面未登录时由 `handleAuthStatus` 自动重定向到登录页
+
+验收：`tsc --noEmit` 无错误；`npm run lint` 0 error 0 warning；`npm run build` 成功。
+
+## 16. 后台（Shopify Admin）前置依赖
 
 规格 §68：产品、集合、导航、客户、公司/公司地点、目录、Markets、Locations，
 以及 Metaobject 定义：`Hero`、`MegaMenuItem`、`Brand`、`Resource`、`TechnicalDocument`、`Location`。

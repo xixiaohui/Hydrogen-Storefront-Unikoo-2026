@@ -33,7 +33,6 @@ export const meta: Route.MetaFunction = () => {
 
 export async function loader({context}: Route.LoaderArgs) {
   await context.customerAccount.handleAuthStatus();
-
   return {};
 }
 
@@ -50,14 +49,11 @@ export async function action({request, context}: Route.ActionArgs) {
       throw new Error('You must provide an address id.');
     }
 
-    // this will ensure redirecting to login never happen for mutatation
     const isLoggedIn = await customerAccount.isLoggedIn();
     if (!isLoggedIn) {
       return data(
         {error: {[addressId]: 'Unauthorized'}},
-        {
-          status: 401,
-        },
+        {status: 401},
       );
     }
 
@@ -87,7 +83,6 @@ export async function action({request, context}: Route.ActionArgs) {
 
     switch (request.method) {
       case 'POST': {
-        // handle new address creation
         try {
           const {data, errors} = await customerAccount.mutate(
             CREATE_ADDRESS_MUTATION,
@@ -121,22 +116,14 @@ export async function action({request, context}: Route.ActionArgs) {
           if (error instanceof Error) {
             return data(
               {error: {[addressId]: error.message}},
-              {
-                status: 400,
-              },
+              {status: 400},
             );
           }
-          return data(
-            {error: {[addressId]: error}},
-            {
-              status: 400,
-            },
-          );
+          return data({error: {[addressId]: error}}, {status: 400});
         }
       }
 
       case 'PUT': {
-        // handle address updates
         try {
           const {data, errors} = await customerAccount.mutate(
             UPDATE_ADDRESS_MUTATION,
@@ -171,22 +158,14 @@ export async function action({request, context}: Route.ActionArgs) {
           if (error instanceof Error) {
             return data(
               {error: {[addressId]: error.message}},
-              {
-                status: 400,
-              },
+              {status: 400},
             );
           }
-          return data(
-            {error: {[addressId]: error}},
-            {
-              status: 400,
-            },
-          );
+          return data({error: {[addressId]: error}}, {status: 400});
         }
       }
 
       case 'DELETE': {
-        // handles address deletion
         try {
           const {data, errors} = await customerAccount.mutate(
             DELETE_ADDRESS_MUTATION,
@@ -215,44 +194,25 @@ export async function action({request, context}: Route.ActionArgs) {
           if (error instanceof Error) {
             return data(
               {error: {[addressId]: error.message}},
-              {
-                status: 400,
-              },
+              {status: 400},
             );
           }
-          return data(
-            {error: {[addressId]: error}},
-            {
-              status: 400,
-            },
-          );
+          return data({error: {[addressId]: error}}, {status: 400});
         }
       }
 
       default: {
         return data(
           {error: {[addressId]: 'Method not allowed'}},
-          {
-            status: 405,
-          },
+          {status: 405},
         );
       }
     }
   } catch (error: unknown) {
     if (error instanceof Error) {
-      return data(
-        {error: error.message},
-        {
-          status: 400,
-        },
-      );
+      return data({error: error.message}, {status: 400});
     }
-    return data(
-      {error},
-      {
-        status: 400,
-      },
-    );
+    return data({error}, {status: 400});
   }
 }
 
@@ -262,24 +222,39 @@ export default function Addresses() {
 
   return (
     <div className="account-addresses">
-      <h2>Addresses</h2>
-      <br />
-      <div>
-        <div>
-          <legend>Create address</legend>
-          <NewAddressForm key={addresses.nodes.length} />
+      <div className="section-heading">
+        <h2>Addresses</h2>
+      </div>
+
+      <div className="account-addresses-content">
+        <div className="card account-new-address">
+          <div className="card-body">
+            <h3 className="section-heading">
+              <span>Add new address</span>
+            </h3>
+            <NewAddressForm key={addresses.nodes.length} />
+          </div>
         </div>
-        <br />
-        <hr />
-        <br />
-        {!addresses.nodes.length ? (
-          <p>You have no addresses saved.</p>
-        ) : (
-          <ExistingAddresses
-            addresses={addresses}
-            defaultAddress={defaultAddress}
-          />
-        )}
+
+        <div className="account-existing-addresses">
+          <h3 className="section-heading">
+            <span>Saved addresses</span>
+          </h3>
+
+          {!addresses.nodes.length ? (
+            <p className="text-muted">No addresses saved yet.</p>
+          ) : (
+            <div className="account-addresses-grid">
+              {addresses.nodes.map((address) => (
+                <AddressCard
+                  key={address.id}
+                  address={address}
+                  defaultAddress={defaultAddress}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -307,54 +282,82 @@ function NewAddressForm() {
       defaultAddress={null}
     >
       {({stateForMethod}) => (
-        <div>
-          <button
-            disabled={stateForMethod('POST') !== 'idle'}
-            formMethod="POST"
-            type="submit"
-          >
-            {stateForMethod('POST') !== 'idle' ? 'Creating' : 'Create'}
-          </button>
-        </div>
+        <button
+          className="btn btn-primary"
+          disabled={stateForMethod('POST') !== 'idle'}
+          formMethod="POST"
+          type="submit"
+        >
+          {stateForMethod('POST') !== 'idle' ? 'Creating…' : 'Create address'}
+        </button>
       )}
     </AddressForm>
   );
 }
 
-function ExistingAddresses({
-  addresses,
+function AddressCard({
+  address,
   defaultAddress,
-}: Pick<CustomerFragment, 'addresses' | 'defaultAddress'>) {
+}: {
+  address: AddressFragment;
+  defaultAddress: CustomerFragment['defaultAddress'];
+}) {
+  const isDefault = defaultAddress?.id === address.id;
+
   return (
-    <div>
-      <legend>Existing addresses</legend>
-      {addresses.nodes.map((address) => (
+    <div className={`card account-address-card${isDefault ? ' is-default' : ''}`}>
+      <div className="card-body">
+        <div className="account-address-header">
+          <h4>
+            {address.firstName} {address.lastName}
+          </h4>
+          {isDefault && <span className="badge badge-brand">Default</span>}
+        </div>
+
+        {address.company && (
+          <p className="account-address-company">{address.company}</p>
+        )}
+
+        <address className="account-address-details">
+          {address.address1}
+          {address.address2 && <>, {address.address2}</>}
+          <br />
+          {address.city}, {address.zoneCode} {address.zip}
+          <br />
+          {address.territoryCode}
+        </address>
+
+        {address.phoneNumber && (
+          <p className="account-address-phone">☎ {address.phoneNumber}</p>
+        )}
+
         <AddressForm
-          key={address.id}
           addressId={address.id}
           address={address}
           defaultAddress={defaultAddress}
         >
           {({stateForMethod}) => (
-            <div>
+            <div className="account-address-actions">
               <button
+                className="btn btn-secondary btn-sm"
                 disabled={stateForMethod('PUT') !== 'idle'}
                 formMethod="PUT"
                 type="submit"
               >
-                {stateForMethod('PUT') !== 'idle' ? 'Saving' : 'Save'}
+                {stateForMethod('PUT') !== 'idle' ? 'Saving…' : 'Save'}
               </button>
               <button
+                className="btn btn-ghost btn-sm"
                 disabled={stateForMethod('DELETE') !== 'idle'}
                 formMethod="DELETE"
                 type="submit"
               >
-                {stateForMethod('DELETE') !== 'idle' ? 'Deleting' : 'Delete'}
+                {stateForMethod('DELETE') !== 'idle' ? 'Deleting…' : 'Delete'}
               </button>
             </div>
           )}
         </AddressForm>
-      ))}
+      </div>
     </div>
   );
 }
@@ -376,141 +379,185 @@ export function AddressForm({
   const action = useActionData<ActionResponse>();
   const error = action?.error?.[addressId];
   const isDefaultAddress = defaultAddress?.id === addressId;
+
   return (
-    <Form id={addressId}>
-      <fieldset>
-        <input type="hidden" name="addressId" defaultValue={addressId} />
-        <label htmlFor="firstName">First name*</label>
-        <input
-          aria-label="First name"
-          autoComplete="given-name"
-          defaultValue={address?.firstName ?? ''}
-          id="firstName"
-          name="firstName"
-          placeholder="First name"
-          required
-          type="text"
-        />
-        <label htmlFor="lastName">Last name*</label>
-        <input
-          aria-label="Last name"
-          autoComplete="family-name"
-          defaultValue={address?.lastName ?? ''}
-          id="lastName"
-          name="lastName"
-          placeholder="Last name"
-          required
-          type="text"
-        />
-        <label htmlFor="company">Company</label>
-        <input
-          aria-label="Company"
-          autoComplete="organization"
-          defaultValue={address?.company ?? ''}
-          id="company"
-          name="company"
-          placeholder="Company"
-          type="text"
-        />
-        <label htmlFor="address1">Address line*</label>
-        <input
-          aria-label="Address line 1"
-          autoComplete="address-line1"
-          defaultValue={address?.address1 ?? ''}
-          id="address1"
-          name="address1"
-          placeholder="Address line 1*"
-          required
-          type="text"
-        />
-        <label htmlFor="address2">Address line 2</label>
-        <input
-          aria-label="Address line 2"
-          autoComplete="address-line2"
-          defaultValue={address?.address2 ?? ''}
-          id="address2"
-          name="address2"
-          placeholder="Address line 2"
-          type="text"
-        />
-        <label htmlFor="city">City*</label>
-        <input
-          aria-label="City"
-          autoComplete="address-level2"
-          defaultValue={address?.city ?? ''}
-          id="city"
-          name="city"
-          placeholder="City"
-          required
-          type="text"
-        />
-        <label htmlFor="zoneCode">State / Province*</label>
-        <input
-          aria-label="State/Province"
-          autoComplete="address-level1"
-          defaultValue={address?.zoneCode ?? ''}
-          id="zoneCode"
-          name="zoneCode"
-          placeholder="State / Province"
-          required
-          type="text"
-        />
-        <label htmlFor="zip">Zip / Postal Code*</label>
-        <input
-          aria-label="Zip"
-          autoComplete="postal-code"
-          defaultValue={address?.zip ?? ''}
-          id="zip"
-          name="zip"
-          placeholder="Zip / Postal Code"
-          required
-          type="text"
-        />
-        <label htmlFor="territoryCode">Country Code*</label>
-        <input
-          aria-label="Country code"
-          autoComplete="country"
-          defaultValue={address?.territoryCode ?? ''}
-          id="territoryCode"
-          name="territoryCode"
-          placeholder="Country"
-          required
-          type="text"
-          maxLength={2}
-        />
-        <label htmlFor="phoneNumber">Phone</label>
-        <input
-          aria-label="Phone Number"
-          autoComplete="tel"
-          defaultValue={address?.phoneNumber ?? ''}
-          id="phoneNumber"
-          name="phoneNumber"
-          placeholder="+16135551111"
-          pattern="^\+?[1-9]\d{3,14}$"
-          type="tel"
-        />
-        <div>
+    <Form className="address-form" id={addressId}>
+      <input type="hidden" name="addressId" defaultValue={addressId} />
+
+      <div className="address-form-grid">
+        <div className="field">
+          <label className="label" htmlFor="firstName">
+            First name
+          </label>
           <input
-            defaultChecked={isDefaultAddress}
-            id="defaultAddress"
-            name="defaultAddress"
-            type="checkbox"
+            autoComplete="given-name"
+            className="input"
+            defaultValue={address?.firstName ?? ''}
+            id="firstName"
+            name="firstName"
+            placeholder="First name"
+            required
+            type="text"
           />
-          <label htmlFor="defaultAddress">Set as default address</label>
         </div>
-        {error ? (
-          <p>
-            <mark>
-              <small>{error}</small>
-            </mark>
-          </p>
-        ) : (
-          <br />
-        )}
-        {children({
-          stateForMethod: (method) => (formMethod === method ? state : 'idle'),
-        })}
-      </fieldset>
+
+        <div className="field">
+          <label className="label" htmlFor="lastName">
+            Last name
+          </label>
+          <input
+            autoComplete="family-name"
+            className="input"
+            defaultValue={address?.lastName ?? ''}
+            id="lastName"
+            name="lastName"
+            placeholder="Last name"
+            required
+            type="text"
+          />
+        </div>
+
+        <div className="field">
+          <label className="label" htmlFor="company">
+            Company
+          </label>
+          <input
+            autoComplete="organization"
+            className="input"
+            defaultValue={address?.company ?? ''}
+            id="company"
+            name="company"
+            placeholder="Company"
+            type="text"
+          />
+        </div>
+
+        <div className="field">
+          <label className="label" htmlFor="address1">
+            Address line 1
+          </label>
+          <input
+            autoComplete="address-line1"
+            className="input"
+            defaultValue={address?.address1 ?? ''}
+            id="address1"
+            name="address1"
+            placeholder="Street address"
+            required
+            type="text"
+          />
+        </div>
+
+        <div className="field">
+          <label className="label" htmlFor="address2">
+            Address line 2
+          </label>
+          <input
+            autoComplete="address-line2"
+            className="input"
+            defaultValue={address?.address2 ?? ''}
+            id="address2"
+            name="address2"
+            placeholder="Apt, suite, etc."
+            type="text"
+          />
+        </div>
+
+        <div className="field">
+          <label className="label" htmlFor="city">
+            City
+          </label>
+          <input
+            autoComplete="address-level2"
+            className="input"
+            defaultValue={address?.city ?? ''}
+            id="city"
+            name="city"
+            placeholder="City"
+            required
+            type="text"
+          />
+        </div>
+
+        <div className="field">
+          <label className="label" htmlFor="zoneCode">
+            State / Province
+          </label>
+          <input
+            autoComplete="address-level1"
+            className="input"
+            defaultValue={address?.zoneCode ?? ''}
+            id="zoneCode"
+            name="zoneCode"
+            placeholder="State / Province"
+            required
+            type="text"
+          />
+        </div>
+
+        <div className="field">
+          <label className="label" htmlFor="zip">
+            Zip / Postal code
+          </label>
+          <input
+            autoComplete="postal-code"
+            className="input"
+            defaultValue={address?.zip ?? ''}
+            id="zip"
+            name="zip"
+            placeholder="Zip / Postal code"
+            required
+            type="text"
+          />
+        </div>
+
+        <div className="field">
+          <label className="label" htmlFor="territoryCode">
+            Country
+          </label>
+          <input
+            autoComplete="country"
+            className="input"
+            defaultValue={address?.territoryCode ?? ''}
+            id="territoryCode"
+            name="territoryCode"
+            placeholder="Country"
+            required
+            type="text"
+          />
+        </div>
+
+        <div className="field">
+          <label className="label" htmlFor="phoneNumber">
+            Phone
+          </label>
+          <input
+            autoComplete="tel"
+            className="input"
+            defaultValue={address?.phoneNumber ?? ''}
+            id="phoneNumber"
+            name="phoneNumber"
+            placeholder="+1 (555) 000-0000"
+            type="tel"
+          />
+        </div>
+      </div>
+
+      <div className="field-checkbox">
+        <input
+          defaultChecked={isDefaultAddress}
+          id="defaultAddress"
+          name="defaultAddress"
+          type="checkbox"
+        />
+        <label htmlFor="defaultAddress">Set as default address</label>
+      </div>
+
+      {error && <p className="account-error">{error}</p>}
+
+      {children({
+        stateForMethod: (method) => (formMethod === method ? state : 'idle'),
+      })}
     </Form>
   );
 }

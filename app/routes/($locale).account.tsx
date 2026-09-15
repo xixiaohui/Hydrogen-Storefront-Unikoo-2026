@@ -40,50 +40,67 @@ export default function AccountLayout() {
   const heading = customer
     ? customer.firstName
       ? `Welcome, ${customer.firstName}`
-      : `Welcome to your account.`
+      : `Welcome to your account`
     : 'Account Details';
 
   return (
-    <div className="account">
-      <h1>{heading}</h1>
-      <br />
-      <AccountMenu />
-      <br />
-      <br />
-      <Outlet context={{customer}} />
+    <div className="account-page">
+      <div className="container-page">
+        <h1 className="account-title">{heading}</h1>
+
+        <div className="account-layout">
+          <aside className="account-sidebar">
+            <AccountMenu />
+          </aside>
+
+          <div className="account-main">
+            <Outlet context={{customer}} />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
 
 function AccountMenu() {
-  function isActiveStyle({
-    isActive,
-    isPending,
-  }: {
-    isActive: boolean;
-    isPending: boolean;
-  }) {
-    return {
-      fontWeight: isActive ? 'bold' : undefined,
-      color: isPending ? 'grey' : 'black',
-    };
-  }
-
   return (
-    <nav role="navigation">
-      <NavLink to="/account/orders" style={isActiveStyle}>
-        Orders &nbsp;
+    <nav className="account-nav" role="navigation" aria-label="Account">
+      <NavLink
+        className={({isActive}) =>
+          `account-nav-link${isActive ? ' is-active' : ''}`
+        }
+        end
+        to="/account"
+      >
+        Dashboard
       </NavLink>
-      &nbsp;|&nbsp;
-      <NavLink to="/account/profile" style={isActiveStyle}>
-        &nbsp; Profile &nbsp;
+      <NavLink
+        className={({isActive}) =>
+          `account-nav-link${isActive ? ' is-active' : ''}`
+        }
+        to="/account/orders"
+      >
+        Orders
       </NavLink>
-      &nbsp;|&nbsp;
-      <NavLink to="/account/addresses" style={isActiveStyle}>
-        &nbsp; Addresses &nbsp;
+      <NavLink
+        className={({isActive}) =>
+          `account-nav-link${isActive ? ' is-active' : ''}`
+        }
+        to="/account/addresses"
+      >
+        Addresses
       </NavLink>
-      &nbsp;|&nbsp;
-      <Logout />
+      <NavLink
+        className={({isActive}) =>
+          `account-nav-link${isActive ? ' is-active' : ''}`
+        }
+        to="/account/profile"
+      >
+        Profile
+      </NavLink>
+      <div className="account-nav-logout">
+        <Logout />
+      </div>
     </nav>
   );
 }
@@ -91,7 +108,9 @@ function AccountMenu() {
 function Logout() {
   return (
     <Form className="account-logout" method="POST" action="/account/logout">
-      &nbsp;<button type="submit">Sign out</button>
+      <button className="btn btn-secondary btn-sm" type="submit">
+        Sign out
+      </button>
     </Form>
   );
 }
