@@ -10,9 +10,25 @@ import {Hero} from '~/components/home/Hero';
 import {CategoryNav} from '~/components/home/CategoryNav';
 import {FeaturedProducts} from '~/components/home/FeaturedProducts';
 import {ValueProps} from '~/components/home/ValueProps';
+import {organizationJsonLd, JsonLd} from '~/lib/seo';
 
-export const meta: Route.MetaFunction = () => {
-  return [{title: 'Hydrogen | Home'}];
+export const meta: Route.MetaFunction = ({location}) => {
+  const url = location.pathname === '/' ? '/' : location.pathname;
+
+  return [
+    {title: 'Hydrogen | Home'},
+    {name: 'description', content: 'B2B industrial supply and procurement'},
+    // Open Graph
+    {property: 'og:type', content: 'website'},
+    {property: 'og:title', content: 'Industrial Supply Co.'},
+    {property: 'og:description', content: 'B2B industrial supply and procurement'},
+    {property: 'og:url', content: url},
+    {property: 'og:site_name', content: 'Industrial Supply Co.'},
+    // Twitter Card
+    {name: 'twitter:card', content: 'summary_large_image'},
+    {name: 'twitter:title', content: 'Industrial Supply Co.'},
+    {name: 'twitter:description', content: 'B2B industrial supply and procurement'},
+  ];
 };
 
 export async function loader(args: Route.LoaderArgs) {
@@ -24,25 +40,22 @@ export async function loader(args: Route.LoaderArgs) {
 async function loadCriticalData({context}: Route.LoaderArgs) {
   const buyerVariables = await getBuyerVariables(context);
 
-  const [{collections}] = await Promise.all([
+  // Fetch hero collection and nav collections in parallel
+  const [heroResult, navResult] = await Promise.all([
     context.storefront.query(FEATURED_COLLECTION_QUERY, {
+      variables: {...buyerVariables},
+      ...b2bCacheOptions(context.storefront, buyerVariables),
+    }),
+    context.storefront.query(COLLECTIONS_QUERY, {
       variables: {...buyerVariables},
       ...b2bCacheOptions(context.storefront, buyerVariables),
     }),
   ]);
 
-  const {collections: navCollections} = await context.storefront.query(
-    COLLECTIONS_QUERY,
-    {
-      variables: {...buyerVariables},
-      ...b2bCacheOptions(context.storefront, buyerVariables),
-    },
-  );
-
   return {
     isShopLinked: Boolean(context.env.PUBLIC_STORE_DOMAIN),
-    featuredCollection: collections.nodes[0],
-    collections: navCollections.nodes,
+    featuredCollection: heroResult.collections.nodes[0],
+    collections: navResult.collections.nodes,
   };
 }
 
@@ -66,8 +79,19 @@ export default function Homepage() {
   const {featuredCollection, collections, recommendedProducts} =
     useLoaderData<typeof loader>();
 
+  const jsonLd = organizationJsonLd({
+    name: 'Industrial Supply Co.',
+    url: 'https://industrial-supply.com',
+    logo: 'https://industrial-supply.com/logo.png',
+    contactPoint: {
+      telephone: '+1-800-555-0123',
+      email: 'sales@industrial-supply.com',
+    },
+  });
+
   return (
     <div className="home">
+      <JsonLd data={jsonLd} />
       <Hero collection={featuredCollection} />
       <CategoryNav collections={collections as any} />
       <FeaturedProducts products={recommendedProducts} />

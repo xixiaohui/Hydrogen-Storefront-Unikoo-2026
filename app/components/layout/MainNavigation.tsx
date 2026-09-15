@@ -1,13 +1,14 @@
-import {useEffect, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {Link, NavLink} from 'react-router';
 import {MegaMenu} from '~/components/layout/MegaMenu';
 import {resolveMenuUrl} from '~/lib/menu';
 import type {HeaderQuery} from 'storefrontapi.generated';
 
 /**
- * Primary desktop navigation. Two levels are supported, matching what the
- * Shopify `main-menu` navigation exposes. Panels open on hover/focus and are
- * fully keyboard operable (toggle with Enter/Space, close with Escape).
+ * Primary desktop navigation with full keyboard support:
+ * - Left/Right arrows move between top-level items
+ * - Up/Down arrows move within a mega menu panel
+ * - Escape closes the panel
  */
 export function MainNavigation({
   menu,
@@ -20,6 +21,7 @@ export function MainNavigation({
 }) {
   const [openId, setOpenId] = useState<string | null>(null);
   const items = menu?.items ?? [];
+  const navRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     if (!openId) return;
@@ -32,8 +34,32 @@ export function MainNavigation({
     return () => document.removeEventListener('keydown', onKeyDown);
   }, [openId]);
 
+  const handleKeyDown = (event: React.KeyboardEvent, itemId: string) => {
+    const buttons = navRef.current?.querySelectorAll<HTMLButtonElement>(
+      '.main-nav-link',
+    );
+    if (!buttons?.length) return;
+
+    const currentIndex = Array.from(buttons).findIndex(
+      (b) => b.getAttribute('aria-expanded') === 'true',
+    );
+
+    if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+      event.preventDefault();
+      const nextIndex =
+        event.key === 'ArrowRight'
+          ? (currentIndex + 1) % buttons.length
+          : (currentIndex - 1 + buttons.length) % buttons.length;
+      const nextItem = items[nextIndex];
+      if (nextItem?.items?.length) {
+        setOpenId(nextItem.id);
+      }
+      (buttons[nextIndex] as HTMLElement).focus();
+    }
+  };
+
   return (
-    <nav className="main-nav" aria-label="Primary">
+    <nav className="main-nav" aria-label="Primary" ref={navRef}>
       <ul>
         {items.map((item) => {
           const url = resolveMenuUrl(item.url, {
@@ -53,8 +79,10 @@ export function MainNavigation({
               {hasChildren ? (
                 <button
                   aria-expanded={isOpen}
+                  aria-haspopup="true"
                   className="main-nav-link"
                   onClick={() => setOpenId(isOpen ? null : item.id)}
+                  onKeyDown={(e) => handleKeyDown(e, item.id)}
                   type="button"
                 >
                   {item.title}

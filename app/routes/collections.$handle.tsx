@@ -14,9 +14,26 @@ import {
 } from '~/lib/filters';
 import {b2bCacheOptions, getBuyerVariables} from '~/lib/b2b';
 import type {ProductItemFragment} from 'storefrontapi.generated';
+import {collectionJsonLd, breadcrumbJsonLd, JsonLd} from '~/lib/seo';
 
-export const meta: Route.MetaFunction = ({data}) => {
-  return [{title: `Hydrogen | ${data?.collection.title ?? ''} Collection`}];
+export const meta: Route.MetaFunction = ({data, location}) => {
+  const collection = data?.collection;
+  if (!collection) return [{title: 'Collection'}];
+
+  const title = `${collection.title} Collection`;
+  const description = collection.description || `Shop ${collection.title} products`;
+
+  return [
+    {title: `Hydrogen | ${title}`},
+    {name: 'description', content: description},
+    {property: 'og:type', content: 'website'},
+    {property: 'og:title', content: title},
+    {property: 'og:description', content: description},
+    {property: 'og:url', content: location.pathname},
+    {name: 'twitter:card', content: 'summary_large_image'},
+    {name: 'twitter:title', content: title},
+    {name: 'twitter:description', content: description},
+  ];
 };
 
 export async function loader(args: Route.LoaderArgs) {
@@ -93,8 +110,22 @@ export default function Collection() {
   const sort = getSortValues(searchParams.get('sort')).key as SortKey;
   const products = collection.products;
 
+  const jsonLd = collectionJsonLd({
+    name: collection.title,
+    url: `/collections/${collection.handle}`,
+    description: collection.description ?? undefined,
+  });
+
+  const breadcrumbLd = breadcrumbJsonLd([
+    {name: 'Home', url: '/'},
+    {name: 'Collections', url: '/collections'},
+    {name: collection.title, url: `/collections/${collection.handle}`},
+  ]);
+
   return (
     <div className="collection-page">
+      <JsonLd data={jsonLd} />
+      <JsonLd data={breadcrumbLd} />
       <div className="container-page">
         <Breadcrumbs
           crumbs={[

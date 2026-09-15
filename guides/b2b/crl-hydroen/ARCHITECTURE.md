@@ -237,7 +237,29 @@
 
 验收：`tsc --noEmit` 无错误；`npm run lint` 0 error 0 warning；`npm run build` 成功。
 
-## 16. 后台（Shopify Admin）前置依赖
+## 16. 已落地：P9-P11 优化
+
+### P9 性能
+- `_index.tsx`：`FeaturedCollection` 和 `CollectionsNav` 查询改为 `Promise.all` 并行（原本顺序执行）
+- `Hero.tsx`：大图 `loading="eager"`（首屏关键资源）
+- `root.tsx`：`links()` 添加字体 preload（`inter-latin-400-normal.woff2`）
+
+### P10 可访问性
+- `lib/use-focus-trap.ts`：焦点捕获 hook（Tab 循环、Escape 关闭）
+- `Aside.tsx`：集成焦点捕获，打开时自动聚焦第一个可聚焦元素
+- `MainNavigation.tsx`：键盘导航（Left/Right 箭头切换顶级菜单项，Escape 关闭面板）
+
+### P11 SEO
+- `lib/seo.tsx`：JSON-LD 构建器（Product / Organization / BreadcrumbList / Collection）+ `JsonLd` 组件
+- `root.tsx`：Open Graph / Twitter Card meta 标签
+- `products.$handle.tsx`：Product JSON-LD + BreadcrumbList JSON-LD + OG/Twitter meta
+- `collections.$handle.tsx`：Collection JSON-LD + BreadcrumbList JSON-LD + OG/Twitter meta
+- `_index.tsx`：Organization JSON-LD + OG/Twitter meta
+
+验收：`tsc --noEmit` 无错误；`npm run lint` 0 error 0 warning；`npm run build` 成功；
+首页/PDP/集合页 SSR 输出含 `property="og:*"` 和 `application/ld+json`。
+
+## 17. 后台（Shopify Admin）前置依赖
 
 规格 §68：产品、集合、导航、客户、公司/公司地点、目录、Markets、Locations，
 以及 Metaobject 定义：`Hero`、`MegaMenuItem`、`Brand`、`Resource`、`TechnicalDocument`、`Location`。

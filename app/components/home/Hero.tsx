@@ -17,6 +17,7 @@ export function Hero({collection}: {collection?: FeaturedCollectionFragment}) {
             alt={image.altText || collection?.title || 'Hero'}
             className="hero-image"
             data={image}
+            loading="eager"
             sizes="100vw"
           />
         )}

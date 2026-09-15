@@ -6,6 +6,7 @@ import {
   useState,
 } from 'react';
 import {useId} from 'react';
+import {useFocusTrap} from '~/lib/use-focus-trap';
 
 type AsideType = 'search' | 'cart' | 'mobile' | 'location' | 'closed';
 type AsideContextValue = {
@@ -15,14 +16,7 @@ type AsideContextValue = {
 };
 
 /**
- * A side bar component with Overlay
- * @example
- * ```jsx
- * <Aside type="search" heading="SEARCH">
- *  <input type="search" />
- *  ...
- * </Aside>
- * ```
+ * A side bar component with Overlay and focus trap for accessibility.
  */
 export function Aside({
   children,
@@ -36,6 +30,8 @@ export function Aside({
   const {type: activeType, close} = useAside();
   const expanded = type === activeType;
   const id = useId();
+  const trapRef = useFocusTrap(expanded);
+
   useEffect(() => {
     const abortController = new AbortController();
 
@@ -60,8 +56,8 @@ export function Aside({
       role="dialog"
       aria-labelledby={id}
     >
-      <button className="close-outside" onClick={close} />
-      <aside>
+      <button className="close-outside" onClick={close} aria-label="Close" />
+      <aside ref={trapRef as React.RefObject<HTMLElement>}>
         <header>
           <h3 id={id}>{heading}</h3>
           <button className="close reset" onClick={close} aria-label="Close">

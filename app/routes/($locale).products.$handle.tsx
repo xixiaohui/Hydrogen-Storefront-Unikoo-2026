@@ -21,14 +21,34 @@ import {ProductB2BInfo} from '~/components/product/ProductB2BInfo';
 import {ProductSpecs} from '~/components/product/ProductSpecs';
 import {ProductDocuments} from '~/components/product/ProductDocuments';
 import {RelatedProducts} from '~/components/product/RelatedProducts';
+import {productJsonLd, breadcrumbJsonLd, JsonLd} from '~/lib/seo';
 
-export const meta: Route.MetaFunction = ({data}) => {
+export const meta: Route.MetaFunction = ({data, location}) => {
+  const product = data?.product;
+  if (!product) return [{title: 'Product'}];
+
+  const title = product.seo?.title || product.title;
+  const description = product.seo?.description || product.description || '';
+  const image = product.selectedOrFirstAvailableVariant?.image?.url;
+
   return [
-    {title: `Hydrogen | ${data?.product.title ?? ''}`},
+    {title: `Hydrogen | ${title}`},
+    {name: 'description', content: description},
     {
       rel: 'canonical',
-      href: `/products/${data?.product.handle}`,
+      href: `/products/${product.handle}`,
     },
+    // Open Graph
+    {property: 'og:type', content: 'product'},
+    {property: 'og:title', content: title},
+    {property: 'og:description', content: description},
+    ...(image ? [{property: 'og:image', content: image}] : []),
+    {property: 'og:url', content: location.pathname},
+    // Twitter Card
+    {name: 'twitter:card', content: 'summary_large_image'},
+    {name: 'twitter:title', content: title},
+    {name: 'twitter:description', content: description},
+    ...(image ? [{name: 'twitter:image', content: image}] : []),
   ];
 };
 
@@ -123,8 +143,27 @@ export default function Product() {
     .filter((n) => Boolean(n.image))
     .map((n) => ({image: n.image!})) as any;
 
+  const jsonLd = productJsonLd({
+    name: title,
+    url: `/products/${product.handle}`,
+    image: selectedVariant?.image?.url,
+    description: product.description ?? undefined,
+    sku: sku ?? undefined,
+    brand: vendor ?? undefined,
+    price: selectedVariant?.price,
+    availability: selectedVariant?.availableForSale ? 'InStock' : 'OutOfStock',
+  });
+
+  const breadcrumbLd = breadcrumbJsonLd([
+    {name: 'Home', url: '/'},
+    {name: 'Products', url: '/collections/all'},
+    {name: title, url: `/products/${product.handle}`},
+  ]);
+
   return (
     <div className="product-page">
+      <JsonLd data={jsonLd} />
+      <JsonLd data={breadcrumbLd} />
       <div className="container-page">
         <Breadcrumbs
           crumbs={[

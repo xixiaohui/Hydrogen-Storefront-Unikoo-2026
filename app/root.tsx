@@ -92,8 +92,35 @@ export function links() {
       href: 'https://shop.app',
     },
     {rel: 'icon', type: 'image/svg+xml', href: favicon},
+    // Font optimization: preload critical fonts
+    {
+      rel: 'preload',
+      href: 'https://fonts.shopifycdn.com/inter/inter-latin-400-normal.woff2',
+      as: 'font',
+      type: 'font/woff2',
+      crossOrigin: 'anonymous',
+    },
   ];
 }
+
+export const meta: Route.MetaFunction = ({data, location}) => {
+  const url = `https://${data?.publicStoreDomain}${location.pathname}`;
+
+  return [
+    {title: 'Industrial Supply'},
+    {name: 'description', content: 'B2B industrial supply and procurement'},
+    // Open Graph
+    {property: 'og:type', content: 'website'},
+    {property: 'og:title', content: 'Industrial Supply'},
+    {property: 'og:description', content: 'B2B industrial supply and procurement'},
+    {property: 'og:url', content: url},
+    {property: 'og:site_name', content: 'Industrial Supply'},
+    // Twitter Card
+    {name: 'twitter:card', content: 'summary_large_image'},
+    {name: 'twitter:title', content: 'Industrial Supply'},
+    {name: 'twitter:description', content: 'B2B industrial supply and procurement'},
+  ];
+};
 
 export async function loader(args: Route.LoaderArgs) {
   // Start fetching non-critical data without blocking time to first byte
