@@ -359,7 +359,36 @@ Trigger: Draft Order created (条件: note contains "website_quote_form")
 
 验收：`tsc --noEmit` 无错误；`npm run lint` 0 error 0 warning；`npm run build` 成功。
 
-## 21. 后台（Shopify Admin）前置依赖
+## 21. 已落地：全项目审查与优化
+
+基于 code-explorer 全面审查，修复以下问题：
+
+### 高危
+- `webhooks.flow.tsx`：实现 HMAC-SHA256 签名校验（`X-Shopify-Hmac-Sha256` + 恒定时间比较），配置 `SHOPIFY_WEBHOOK_SECRET` 后拒绝未认证请求
+
+### 中危
+- `quote.tsx`：创建 Draft Order 时传入 `companyLocationId`（buyer identity 归属到 B2B 公司地点）；移除 loader 未使用的 `buyerContext`
+- `quick-order.tsx`：SKU 批次查询从顺序 `for await` 改为 `Promise.all` 并行化
+
+### 可访问性
+- `CartSummary.tsx`：折扣码/礼品卡输入补 `aria-label`
+- `FilterSidebar.tsx`：价格 Min/Max 输入补 `aria-label`
+- `PageLayout.tsx` / `search.tsx`：搜索输入补 `aria-label`
+- `account.orders.$id.tsx`：订单行商品图补 `alt`
+- `ProductGallery.tsx`：主图 `loading="eager"`；移除不完整的 tablist ARIA 改为 `role="group"` + `aria-pressed`；缩略图按钮支持左右键切换
+
+### 代码清理
+- 删除死代码：`lib/i18n.ts`、`components/MockShopNotice.tsx`、`components/ProductImage.tsx`
+- `ProductDocuments.tsx`：空 catch 改为 `console.warn`（JSON 解析失败可观测）
+
+### 澄清（非问题）
+- `($locale).X.tsx` 与 `X.tsx` 双份路由是 React Router locale 路由的刻意设计（`($locale)` 是 pathless layout route），不是重复
+- 博客/文章/政策/页面查询不传 buyer 属预期（内容类查询，不涉及产品定价/目录）
+
+验收：`tsc --noEmit` 无错误；`npm run lint` 0 error 0 warning；`npm run build` 成功；
+冒烟：`/`、`/quote`、`/search?q=glass`、`/quick-order` 全部 200。
+
+## 22. 后台（Shopify Admin）前置依赖
 
 规格 §68：产品、集合、导航、客户、公司/公司地点、目录、Markets、Locations，
 以及 Metaobject 定义：`Hero`、`MegaMenuItem`、`Brand`、`Resource`、`TechnicalDocument`、`Location`。

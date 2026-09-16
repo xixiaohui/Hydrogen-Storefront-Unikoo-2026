@@ -172,6 +172,7 @@ function CartDiscounts({
       <UpdateDiscountForm discountCodes={codes}>
         <div className="cart-discount-form">
           <input
+            aria-label="Discount code"
             className="input"
             id={discountCodeInputId}
             type="text"
@@ -293,6 +294,7 @@ function CartGiftCard({
       <AddGiftCardForm fetcherKey="gift-card-add">
         <div className="cart-gift-card-form">
           <input
+            aria-label="Gift card code"
             className="input"
             id={giftCardInputId}
             type="text"

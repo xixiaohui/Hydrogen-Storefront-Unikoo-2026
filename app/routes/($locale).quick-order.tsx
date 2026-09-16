@@ -45,14 +45,20 @@ export async function action({request, context}: Route.ActionArgs) {
     price: {amount: string; currencyCode: string};
   }> = [];
 
-  for (const skuBatch of skuBatches) {
-    const query = buildSkuQuery(skuBatch);
-    const {products} = await storefront.query(QUICK_ORDER_QUERY, {
-      variables: {query, ...buyerVariables},
-      ...b2bCacheOptions(storefront, buyerVariables),
-    });
+  // Query SKU batches in parallel (batches have no inter-dependency)
+  const batchResults = await Promise.all(
+    skuBatches.map(async (skuBatch) => {
+      const query = buildSkuQuery(skuBatch);
+      const {products} = await storefront.query(QUICK_ORDER_QUERY, {
+        variables: {query, ...buyerVariables},
+        ...b2bCacheOptions(storefront, buyerVariables),
+      });
+      return products?.nodes ?? [];
+    }),
+  );
 
-    products?.nodes?.forEach((product) => {
+  for (const nodes of batchResults) {
+    nodes.forEach((product) => {
       product.variants?.nodes?.forEach((variant) => {
         if (variant.sku) {
           allVariants.push({

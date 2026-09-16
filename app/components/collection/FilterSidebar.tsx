@@ -80,6 +80,7 @@ function FilterGroup({
         {expanded && (
           <Form className="filter-price" method="get">
             <input
+              aria-label={`${filter.label} minimum`}
               className="input"
               inputMode="decimal"
               name={PRICE_MIN}
@@ -87,6 +88,7 @@ function FilterGroup({
               type="number"
             />
             <input
+              aria-label={`${filter.label} maximum`}
               className="input"
               inputMode="decimal"
               name={PRICE_MAX}

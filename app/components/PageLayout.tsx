@@ -82,6 +82,7 @@ function SearchAside() {
           {({fetchResults, goToSearch, inputRef}) => (
             <>
               <input
+                aria-label="Search products"
                 name="q"
                 onChange={fetchResults}
                 onFocus={fetchResults}

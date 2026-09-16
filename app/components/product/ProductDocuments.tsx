@@ -26,8 +26,8 @@ export function ProductDocuments({
     try {
       const parsed = JSON.parse(raw) as unknown;
       if (Array.isArray(parsed)) docs = parsed as Array<{title: string; url: string}>;
-    } catch {
-      /* ignore malformed JSON */
+    } catch (error) {
+      console.warn('ProductDocuments: invalid JSON in custom.documents metafield', error);
     }
   }
 

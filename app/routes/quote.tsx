@@ -1,6 +1,6 @@
 import {useLoaderData, useActionData, data} from 'react-router';
 import type {Route} from './+types/quote';
-import {getBuyerVariables, b2bCacheOptions} from '~/lib/b2b';
+import {getBuyerVariables} from '~/lib/b2b';
 import {hasAdminApi, createDraftOrder, type DraftOrderLineItem} from '~/lib/admin-api';
 import {notifyQuoteCreated} from '~/lib/notifications';
 import {QuoteForm} from '~/components/quote/QuoteForm';
@@ -17,7 +17,6 @@ export async function loader({context}: Route.LoaderArgs) {
 
   return {
     cart: currentCart,
-    buyerContext: await getBuyerVariables(context),
   };
 }
 
@@ -56,6 +55,10 @@ export async function action({request, context}: Route.ActionArgs) {
     .filter(Boolean)
     .join('\n');
 
+  // Get B2B buyer context so the draft order is assigned to the company location
+  const buyerVariables = await getBuyerVariables(context);
+  const companyLocationId = buyerVariables.buyer?.companyLocationId;
+
   // Try creating a Draft Order via Admin API
   if (hasAdminApi(context.env) && lineItems.length > 0) {
     try {
@@ -63,6 +66,7 @@ export async function action({request, context}: Route.ActionArgs) {
         lineItems,
         email,
         note,
+        ...(companyLocationId ? {companyLocationId} : {}),
         metafields: [
           {
             namespace: 'custom',

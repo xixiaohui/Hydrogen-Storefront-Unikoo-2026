@@ -55,6 +55,7 @@ export default function SearchPage() {
           {({inputRef}) => (
             <div className="search-input-group">
               <input
+                aria-label="Search by keyword or SKU"
                 className="input search-input"
                 defaultValue={term}
                 name="q"

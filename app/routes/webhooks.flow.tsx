@@ -11,6 +11,9 @@ import {notifyQuoteCreated} from '~/lib/notifications';
  *
  * This endpoint re-broadcasts the event to Slack/Teams so the sales team
  * gets a structured notification with a direct link to the draft order.
+ *
+ * If SHOPIFY_WEBHOOK_SECRET is set, the request body is HMAC-SHA256 verified
+ * against the X-Shopify-Hmac-Sha256 header before any work is done.
  */
 export async function action({
   request,
@@ -20,6 +23,21 @@ export async function action({
   context: {env: Record<string, unknown>};
 }) {
   const body = await request.text();
+
+  // Verify HMAC signature if a webhook secret is configured
+  const secret = (context.env as Record<string, unknown>)
+    ?.SHOPIFY_WEBHOOK_SECRET as string | undefined;
+  const hmacHeader = request.headers.get('X-Shopify-Hmac-Sha256');
+
+  if (secret) {
+    if (!hmacHeader) {
+      return data({error: 'Missing HMAC header'}, {status: 401});
+    }
+    const isValid = await verifyHmac(body, secret, hmacHeader);
+    if (!isValid) {
+      return data({error: 'Invalid HMAC signature'}, {status: 401});
+    }
+  }
 
   let payload: Record<string, unknown>;
   try {
@@ -43,13 +61,6 @@ export async function action({
     ? (draftOrder.line_items as unknown[]).length
     : 0;
 
-  // Verify webhook signature (optional but recommended)
-  const hmacHeader = request.headers.get('X-Shopify-Hmac-Sha256');
-  if (hmacHeader && context.env?.SHOPIFY_WEBHOOK_SECRET) {
-    // In production, verify HMAC here. For now, log.
-    console.warn('Webhook HMAC received:', hmacHeader);
-  }
-
   // Send notification to sales team
   const notified = await notifyQuoteCreated(context.env, {
     draftOrderName: name || 'Unknown draft order',
@@ -67,4 +78,38 @@ export async function action({
     draftOrderName: name,
     notified,
   });
+}
+
+/**
+ * Verify an HMAC-SHA256 signature against a secret using Web Crypto.
+ */
+async function verifyHmac(
+  body: string,
+  secret: string,
+  signature: string,
+): Promise<boolean> {
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(secret),
+    {name: 'HMAC', hash: 'SHA-256'},
+    false,
+    ['sign'],
+  );
+
+  const result = await crypto.subtle.sign('HMAC', key, encoder.encode(body));
+  const digest = Array.from(new Uint8Array(result))
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('');
+
+  // Constant-time comparison to prevent timing attacks
+  const digestBuffer = encoder.encode(digest);
+  const signatureBuffer = encoder.encode(signature);
+  if (digestBuffer.length !== signatureBuffer.length) return false;
+
+  let diff = 0;
+  for (let i = 0; i < digestBuffer.length; i++) {
+    diff |= digestBuffer[i] ^ signatureBuffer[i];
+  }
+  return diff === 0;
 }

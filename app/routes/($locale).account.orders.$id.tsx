@@ -201,7 +201,12 @@ function OrderLineRow({lineItem}: {lineItem: OrderLineItemFullFragment}) {
         <div>
           {lineItem?.image && (
             <div>
-              <Image data={lineItem.image} width={96} height={96} />
+              <Image
+                alt={lineItem.title || 'Order line item'}
+                data={lineItem.image}
+                width={96}
+                height={96}
+              />
             </div>
           )}
           <div>
