@@ -406,7 +406,25 @@ Trigger: Draft Order created (条件: note contains "website_quote_form")
 验收：`tsc --noEmit` 无错误；`npm run lint` 0 error 0 warning；`npm run build` 成功；
 冒烟：`/`、`/quote`、`/collections/all` 全部 200。
 
-## 23. 后台（Shopify Admin）前置依赖
+## 23. 已落地：P0 设计系统重新梳理
+
+| 变更 | 说明 |
+| --- | --- |
+| `tokens.css` 补充字号 scale | `--type-2xs` ~ `--type-3xl`（9 档，对应实际使用值）；命名用 `--type-*` 避免覆盖 Tailwind `text-*` 工具类 |
+| `tokens.css` 补充圆角 | `--radius-xs`(2px) / `--radius-sm`(3px) / `--radius-full`(999px) |
+| 修复 `.badge-warning` 缺失 | `DraftOrders.tsx` 引用了未定义的 `badge-warning`，现已补齐（基于 `--color-warning`） |
+| `components.css` token 化 | btn/card/badge/label/input/breadcrumb/section-heading/header-cart 的字号和圆角从硬编码改为 `var(--type-*)` / `var(--radius-*)` |
+| 新增设计系统文档 | `P0设计系统.md`：架构、令牌清单、组件清单、命名规范、演进方向 |
+
+**发现并修复的关键问题**：
+1. `.badge-warning` 缺失（DraftOrders 待审批徽章此前无色）
+2. 字号/圆角散落硬编码，无统一令牌
+3. 设计系统无文档，缺少使用规范
+
+验收：`tsc --noEmit` 无错误；`npm run lint` 0 error 0 warning；`npm run build` 成功；
+产物 `tailwind-*.css` 含 `--type-base`、`--radius-xs`、`badge-warning`、`--radius-full`。
+
+## 24. 后台（Shopify Admin）前置依赖
 
 规格 §68：产品、集合、导航、客户、公司/公司地点、目录、Markets、Locations，
 以及 Metaobject 定义：`Hero`、`MegaMenuItem`、`Brand`、`Resource`、`TechnicalDocument`、`Location`。

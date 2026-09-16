@@ -57,7 +57,7 @@
     padding-bottom: 0.75rem;
 
     h2 {
-      font-size: 1.25rem;
+      font-size: var(--type-xl);
       font-weight: 700;
       letter-spacing: -0.01em;
       margin: 0;
@@ -74,10 +74,10 @@
   .btn {
     align-items: center;
     border: 1px solid transparent;
-    border-radius: 2px;
+    border-radius: var(--radius-xs);
     cursor: pointer;
     display: inline-flex;
-    font-size: 0.875rem;
+    font-size: var(--type-base);
     font-weight: 600;
     gap: 0.5rem;
     justify-content: center;
@@ -135,7 +135,7 @@
   }
 
   .btn-sm {
-    font-size: 0.8125rem;
+    font-size: var(--type-sm);
     padding: 0.4375rem 0.75rem;
   }
 
@@ -148,7 +148,7 @@
   .card {
     background: var(--color-surface);
     border: 1px solid var(--color-line);
-    border-radius: 3px;
+    border-radius: var(--radius-sm);
     box-shadow: var(--shadow-card);
   }
 
@@ -159,10 +159,10 @@
   .badge {
     background: var(--color-surface-alt);
     border: 1px solid var(--color-line);
-    border-radius: 2px;
+    border-radius: var(--radius-xs);
     color: var(--color-muted);
     display: inline-block;
-    font-size: 0.6875rem;
+    font-size: var(--type-2xs);
     font-weight: 700;
     letter-spacing: 0.04em;
     padding: 0.125rem 0.375rem;
@@ -185,6 +185,12 @@
     background: color-mix(in srgb, var(--color-danger) 10%, white);
     border-color: color-mix(in srgb, var(--color-danger) 30%, white);
     color: var(--color-danger);
+  }
+
+  .badge-warning {
+    background: color-mix(in srgb, var(--color-warning) 10%, white);
+    border-color: color-mix(in srgb, var(--color-warning) 30%, white);
+    color: var(--color-warning);
   }
 
   /* Data tables (specs, quantity rules, price breaks) -------------------- */
@@ -233,7 +239,7 @@
 
   .label {
     color: var(--color-ink);
-    font-size: 0.75rem;
+    font-size: var(--type-xs);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.03em;
@@ -243,8 +249,8 @@
   .select {
     background: var(--color-surface);
     border: 1px solid var(--color-line-strong);
-    border-radius: 2px;
-    font-size: 0.875rem;
+    border-radius: var(--radius-xs);
+    font-size: var(--type-base);
     padding: 0.5rem 0.625rem;
     width: 100%;
 
@@ -259,7 +265,7 @@
     color: var(--color-muted);
     display: flex;
     flex-wrap: wrap;
-    font-size: 0.8125rem;
+    font-size: var(--type-sm);
     gap: 0.375rem;
     padding-block: 0.75rem;
 
@@ -430,9 +436,9 @@
 
   .header-cart span {
     background: var(--color-brand-600);
-    border-radius: 999px;
+    border-radius: var(--radius-full);
     color: #fff;
-    font-size: 0.6875rem;
+    font-size: var(--type-2xs);
     line-height: 1;
     padding: 0.1875rem 0.375rem;
   }
