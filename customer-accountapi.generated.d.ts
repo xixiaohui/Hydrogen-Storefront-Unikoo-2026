@@ -69,6 +69,32 @@ export type CustomerAddressCreateMutation = {
   }>;
 };
 
+export type CustomerCompanyContactsQueryVariables = CustomerAccountAPI.Exact<{
+  first?: CustomerAccountAPI.InputMaybe<
+    CustomerAccountAPI.Scalars['Int']['input']
+  >;
+  language?: CustomerAccountAPI.InputMaybe<CustomerAccountAPI.LanguageCode>;
+}>;
+
+export type CustomerCompanyContactsQuery = {
+  customer: {
+    companyContacts: {
+      nodes: Array<
+        Pick<CustomerAccountAPI.CompanyContact, 'id' | 'status' | 'title'> & {
+          customer: Pick<
+            CustomerAccountAPI.Customer,
+            'firstName' | 'lastName'
+          > & {
+            emailAddress?: CustomerAccountAPI.Maybe<
+              Pick<CustomerAccountAPI.CustomerEmailAddress, 'emailAddress'>
+            >;
+          };
+        }
+      >;
+    };
+  };
+};
+
 export type CustomerFragment = Pick<
   CustomerAccountAPI.Customer,
   'id' | 'firstName' | 'lastName'
@@ -170,6 +196,31 @@ export type CustomerDetailsQuery = {
           | 'zip'
           | 'phoneNumber'
         >
+      >;
+    };
+  };
+};
+
+export type CustomerDraftOrdersQueryVariables = CustomerAccountAPI.Exact<{
+  first?: CustomerAccountAPI.InputMaybe<
+    CustomerAccountAPI.Scalars['Int']['input']
+  >;
+  language?: CustomerAccountAPI.InputMaybe<CustomerAccountAPI.LanguageCode>;
+}>;
+
+export type CustomerDraftOrdersQuery = {
+  customer: {
+    draftOrders: {
+      nodes: Array<
+        Pick<
+          CustomerAccountAPI.DraftOrder,
+          'id' | 'name' | 'status' | 'createdAt'
+        > & {
+          totalPrice: Pick<
+            CustomerAccountAPI.MoneyV2,
+            'amount' | 'currencyCode'
+          >;
+        }
       >;
     };
   };
@@ -541,9 +592,17 @@ export type CustomerUpdateMutation = {
 };
 
 interface GeneratedQueryTypes {
+  '#graphql\n  query CustomerCompanyContacts(\n    $first: Int\n    $language: LanguageCode\n  ) @inContext(language: $language) {\n    customer {\n      companyContacts(first: $first) {\n        nodes {\n          id\n          status\n          title\n          customer {\n            firstName\n            lastName\n            emailAddress {\n              emailAddress\n            }\n          }\n        }\n      }\n    }\n  }\n': {
+    return: CustomerCompanyContactsQuery;
+    variables: CustomerCompanyContactsQueryVariables;
+  };
   '#graphql\n  query CustomerDetails($language: LanguageCode) @inContext(language: $language) {\n    customer {\n      ...Customer\n    }\n  }\n  #graphql\n  fragment Customer on Customer {\n    id\n    firstName\n    lastName\n    defaultAddress {\n      ...Address\n    }\n    addresses(first: 6) {\n      nodes {\n        ...Address\n      }\n    }\n  }\n  fragment Address on CustomerAddress {\n    id\n    formatted\n    firstName\n    lastName\n    company\n    address1\n    address2\n    territoryCode\n    zoneCode\n    city\n    zip\n    phoneNumber\n  }\n\n': {
     return: CustomerDetailsQuery;
     variables: CustomerDetailsQueryVariables;
+  };
+  '#graphql\n  query CustomerDraftOrders(\n    $first: Int\n    $language: LanguageCode\n  ) @inContext(language: $language) {\n    customer {\n      draftOrders(first: $first) {\n        nodes {\n          id\n          name\n          status\n          createdAt\n          totalPrice {\n            amount\n            currencyCode\n          }\n        }\n      }\n    }\n  }\n': {
+    return: CustomerDraftOrdersQuery;
+    variables: CustomerDraftOrdersQueryVariables;
   };
   '#graphql\n  query CustomerLocations {\n    customer {\n      id\n      emailAddress {\n        emailAddress\n      }\n      companyContacts(first: 1) {\n        edges {\n          node {\n            company {\n              id\n              name\n              locations(first: 10) {\n                edges {\n                  node {\n                    id\n                    name\n                    shippingAddress {\n                      countryCode\n                      formattedAddress\n                    }\n                  }\n                }\n              }\n            }\n          }\n        }\n      }\n    }\n  }\n': {
     return: CustomerLocationsQuery;

@@ -276,7 +276,37 @@
 验收：`tsc --noEmit` 无错误；`npm run lint` 0 error 0 warning；`npm run build` 成功；
 `/cart` 返回 200 且含 `cart-page` 与 `breadcrumb`。
 
-## 18. 后台（Shopify Admin）前置依赖
+## 18. 已落地：B2B 深度功能
+
+### Quote 申请流程
+| 文件 | 说明 |
+| --- | --- |
+| `app/routes/quote.tsx`（+ `($locale)` 副本） | Quote 页面：购物车摘要（标题/SKU/数量/单价/小计）+ 表单 + 打印样式 |
+| `app/components/quote/QuoteForm.tsx` | 表单（公司/联系人/邮箱/电话/项目描述），提交后生成 mailto: 链接（含购物车明细）发给销售团队，支持打印 |
+
+### 审批流（Draft Orders）
+| 文件 | 说明 |
+| --- | --- |
+| `app/graphql/customer-account/CustomerDraftOrdersQuery.ts` | 查询 `customer.draftOrders`（名称/状态/金额/日期） |
+| `app/components/account/DraftOrders.tsx` | 待审批订单卡片（状态 badge + 金额），提示在 Shopify Admin 审批 |
+
+### 公司子账号（Team Members）
+| 文件 | 说明 |
+| --- | --- |
+| `app/graphql/customer-account/CustomerCompanyContactsQuery.ts` | 查询 `customer.companyContacts`（姓名/邮箱/职位/状态） |
+| `app/components/account/TeamMembers.tsx` | 团队成员表格（名称/邮箱/职位/状态 badge） |
+
+**API 边界**：Customer Account API 只支持**查询** `companyContacts`/`draftOrders`。
+创建/删除联系人、审批 Draft Order 需 Shopify Admin API（服务端），前端无法完成。
+Quote 通过 mailto: 实现，无后端依赖。
+
+**Account Dashboard 集成**：统计卡片新增 "Pending approvals" 和 "Team members"；
+快速操作新增 "Request a Quote"。
+
+验收：`codegen` + `typegen` + `tsc --noEmit` 无错误；`npm run lint` 0 error 0 warning；
+`npm run build` 成功；`/quote` 返回 200 含表单与购物车摘要。
+
+## 19. 后台（Shopify Admin）前置依赖
 
 规格 §68：产品、集合、导航、客户、公司/公司地点、目录、Markets、Locations，
 以及 Metaobject 定义：`Hero`、`MegaMenuItem`、`Brand`、`Resource`、`TechnicalDocument`、`Location`。

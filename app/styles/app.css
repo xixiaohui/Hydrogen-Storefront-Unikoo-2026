@@ -2420,3 +2420,168 @@ button.reset:hover:not(:has(> *)) {
 .cart-main .cart-line-options {
   display: none;
 }
+
+/*
+* --------------------------------------------------
+* Quote page
+* --------------------------------------------------*/
+.quote-page {
+  padding-bottom: 3rem;
+}
+
+.quote-page-header {
+  margin-bottom: 1.5rem;
+
+  h1 {
+    font-size: 1.75rem;
+    margin: 0 0 0.375rem;
+    text-transform: uppercase;
+  }
+}
+
+.quote-page-intro {
+  color: var(--color-muted);
+  font-size: 0.875rem;
+  margin: 0;
+  max-width: 40rem;
+}
+
+.quote-layout {
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: 1fr;
+
+  @media (min-width: 62em) {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.quote-items-list {
+  display: grid;
+  gap: 0.75rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.quote-item {
+  align-items: center;
+  border-bottom: 1px solid var(--color-line);
+  display: flex;
+  justify-content: space-between;
+  padding-block: 0.625rem;
+
+  &:last-child {
+    border-bottom: 0;
+  }
+}
+
+.quote-item-title {
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.quote-item-sku,
+.quote-item-qty {
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  margin: 0;
+}
+
+.quote-item-price {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.quote-subtotal {
+  align-items: center;
+  border-top: 1px solid var(--color-line);
+  display: flex;
+  font-weight: 700;
+  justify-content: space-between;
+  margin-top: 1rem;
+  padding-top: 1rem;
+}
+
+.quote-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.quote-form-success {
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-success);
+  color: var(--color-success);
+  font-size: 0.875rem;
+  padding: 0.75rem;
+}
+
+/* Draft orders (approval workflow) ---------------------------------- */
+.account-draft-orders {
+  margin-top: 2rem;
+}
+
+.account-draft-orders-note {
+  font-size: 0.8125rem;
+  margin: 0 0 0.75rem;
+}
+
+.account-draft-orders-list {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+}
+
+.account-draft-order-header {
+  align-items: center;
+  display: flex;
+  gap: 0.5rem;
+  justify-content: space-between;
+  margin-bottom: 0.375rem;
+}
+
+.account-draft-order-date {
+  color: var(--color-muted);
+  font-size: 0.8125rem;
+  margin: 0;
+}
+
+.account-draft-order-total {
+  color: var(--color-ink);
+  font-weight: 700;
+  margin: 0;
+}
+
+/* Team members ------------------------------------------------------ */
+.account-team-members {
+  margin-top: 2rem;
+}
+
+.account-team-note {
+  font-size: 0.8125rem;
+  margin: 0 0 0.75rem;
+}
+
+.account-team-table {
+  max-width: 48rem;
+}
+
+/* Print styles for quote page ---------------------------------------- */
+@media print {
+  .quote-form-col,
+  .site-header,
+  .site-footer,
+  .breadcrumb {
+    display: none !important;
+  }
+
+  .quote-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .quote-items {
+    border: 1px solid #000;
+    padding: 1rem;
+  }
+}

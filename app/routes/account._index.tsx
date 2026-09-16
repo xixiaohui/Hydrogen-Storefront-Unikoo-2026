@@ -2,10 +2,14 @@ import {Link, useLoaderData, useOutletContext} from 'react-router';
 import type {Route} from './+types/account._index';
 import {getPaginationVariables} from '@shopify/hydrogen';
 import {CUSTOMER_ORDERS_QUERY} from '~/graphql/customer-account/CustomerOrdersQuery';
+import {CUSTOMER_DRAFT_ORDERS_QUERY} from '~/graphql/customer-account/CustomerDraftOrdersQuery';
+import {CUSTOMER_COMPANY_CONTACTS_QUERY} from '~/graphql/customer-account/CustomerCompanyContactsQuery';
 import type {
   CustomerOrdersFragment,
   CustomerFragment,
 } from 'customer-accountapi.generated';
+import {DraftOrders, type DraftOrderItem} from '~/components/account/DraftOrders';
+import {TeamMembers, type TeamMember} from '~/components/account/TeamMembers';
 
 export const meta: Route.MetaFunction = () => {
   return [{title: 'Account Dashboard'}];
@@ -13,29 +17,58 @@ export const meta: Route.MetaFunction = () => {
 
 export async function loader({context}: Route.LoaderArgs) {
   const {customerAccount} = context;
-  const paginationVariables = getPaginationVariables(new Request('http://localhost/account'), {
-    pageBy: 5,
-  });
+  const paginationVariables = getPaginationVariables(
+    new Request('http://localhost/account'),
+    {pageBy: 5},
+  );
 
-  const {data, errors} = await customerAccount.query(CUSTOMER_ORDERS_QUERY, {
-    variables: {
-      ...paginationVariables,
-      query: '',
-      language: customerAccount.i18n.language,
+  const {data: ordersData, errors: ordersErrors} = await customerAccount.query(
+    CUSTOMER_ORDERS_QUERY,
+    {
+      variables: {
+        ...paginationVariables,
+        query: '',
+        language: customerAccount.i18n.language,
+      },
     },
-  });
+  );
 
-  if (errors?.length || !data?.customer) {
+  if (ordersErrors?.length || !ordersData?.customer) {
     throw Error('Customer orders not found');
   }
 
-  return {customer: data.customer};
+  // Load B2B data in parallel; failures are non-fatal
+  const [draftOrdersResult, contactsResult] = await Promise.allSettled([
+    customerAccount.query(CUSTOMER_DRAFT_ORDERS_QUERY, {
+      variables: {first: 5, language: customerAccount.i18n.language},
+    }),
+    customerAccount.query(CUSTOMER_COMPANY_CONTACTS_QUERY, {
+      variables: {first: 10, language: customerAccount.i18n.language},
+    }),
+  ]);
+
+  const draftOrders: DraftOrderItem[] =
+    draftOrdersResult.status === 'fulfilled'
+      ? ((draftOrdersResult.value?.data?.customer?.draftOrders?.nodes ??
+          []) as DraftOrderItem[])
+      : [];
+
+  const contacts: TeamMember[] =
+    contactsResult.status === 'fulfilled'
+      ? ((contactsResult.value?.data?.customer?.companyContacts?.nodes ??
+          []) as TeamMember[])
+      : [];
+
+  return {
+    customer: ordersData.customer,
+    draftOrders,
+    contacts,
+  };
 }
 
 export default function AccountDashboard() {
-  const {customer: ordersCustomer} = useLoaderData<{
-    customer: CustomerOrdersFragment;
-  }>();
+  const {customer: ordersCustomer, draftOrders, contacts} =
+    useLoaderData<typeof loader>();
   const {customer} = useOutletContext<{customer: CustomerFragment}>();
   const orders = ordersCustomer.orders;
 
@@ -60,6 +93,9 @@ export default function AccountDashboard() {
         <Link className="btn btn-primary" to="/quick-order">
           Quick Order
         </Link>
+        <Link className="btn btn-secondary" to="/quote">
+          Request a Quote
+        </Link>
         <Link className="btn btn-secondary" to="/account/orders">
           View all orders
         </Link>
@@ -78,18 +114,17 @@ export default function AccountDashboard() {
           <p className="account-stat-label">Total orders</p>
         </div>
         <div className="account-stat">
-          <p className="account-stat-value">
-            {customer.addresses?.nodes?.length ?? 0}
-          </p>
-          <p className="account-stat-label">Saved addresses</p>
+          <p className="account-stat-value">{draftOrders.length}</p>
+          <p className="account-stat-label">Pending approvals</p>
         </div>
         <div className="account-stat">
-          <p className="account-stat-value">
-            {customer.defaultAddress ? 'Yes' : 'No'}
-          </p>
-          <p className="account-stat-label">Default address set</p>
+          <p className="account-stat-value">{contacts.length}</p>
+          <p className="account-stat-label">Team members</p>
         </div>
       </div>
+
+      {/* Pending approvals (B2B draft orders) */}
+      <DraftOrders orders={draftOrders} />
 
       {/* Recent orders */}
       <div className="account-recent-orders">
@@ -134,6 +169,9 @@ export default function AccountDashboard() {
           </p>
         )}
       </div>
+
+      {/* Team members (company contacts) */}
+      <TeamMembers contacts={contacts} />
     </div>
   );
 }
