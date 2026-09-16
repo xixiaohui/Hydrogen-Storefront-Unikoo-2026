@@ -30,6 +30,7 @@
   /* Border radius */
   --radius-xs: 2px;  /* buttons, badges, inputs */
   --radius-sm: 3px;  /* cards */
+  --radius-md: 4px;  /* images, larger surfaces */
   --radius-full: 999px; /* pills, count badges */
 
   /* Brand (industrial blue) */

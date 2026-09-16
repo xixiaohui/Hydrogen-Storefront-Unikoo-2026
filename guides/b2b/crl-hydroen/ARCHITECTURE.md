@@ -424,7 +424,31 @@ Trigger: Draft Order created (条件: note contains "website_quote_form")
 验收：`tsc --noEmit` 无错误；`npm run lint` 0 error 0 warning；`npm run build` 成功；
 产物 `tailwind-*.css` 含 `--type-base`、`--radius-xs`、`badge-warning`、`--radius-full`。
 
-## 24. 后台（Shopify Admin）前置依赖
+## 24. 已落地：设计系统 token 化审计与修复
+
+审计发现现有组件大部分未遵循 P0 设计系统，已批量修复：
+
+### 修复清单
+| 项 | 修复 |
+| --- | --- |
+| 字号硬编码（85+ 处） | `app.css` + `components.css` 全部 `font-size: Xrem` → `var(--type-*)` |
+| 圆角硬编码（5 处） | 补 `--radius-md: 4px`；`2px` → `--radius-xs` |
+| 字号偏差值（2 处） | `1.6rem` → `--type-2xl`；`0.9375rem`(15px) → `--type-base` |
+| 颜色硬编码（2 处） | `#e5e5e5`/`#d1d5db` → `--color-line`/`--color-line-strong` |
+| 内联样式（3 处） | `ProductForm` 变体选择 border/opacity → `.is-selected`/`.is-unavailable` CSS 类 |
+
+### 剩余（合理保留）
+- `reset.css` 字号/圆角：浏览器默认样式重置，不属设计系统
+- swatch `backgroundColor`：商品数据（Shopify 色块颜色），非设计令牌
+- `rgba()` 遮罩/阴影：overlay 惯例写法
+- `#fff` 纯白：footer/topbar 深色背景上的固定白
+
+### 结果
+`app.css` 和 `components.css` 字号、圆角已 100% token 化，仅 `reset.css` 保留字面值（基础重置）。
+
+验收：`tsc --noEmit` 无错误；`npm run lint` 0 error 0 warning；`npm run build` 成功。
+
+## 25. 后台（Shopify Admin）前置依赖
 
 规格 §68：产品、集合、导航、客户、公司/公司地点、目录、Markets、Locations，
 以及 Metaobject 定义：`Hero`、`MegaMenuItem`、`Brand`、`Resource`、`TechnicalDocument`、`Location`。
