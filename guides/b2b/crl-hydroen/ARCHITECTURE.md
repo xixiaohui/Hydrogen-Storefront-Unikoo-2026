@@ -329,7 +329,37 @@ Quote 通过 mailto: 实现，无后端依赖。
 验收：`tsc --noEmit` 无错误；`npm run lint` 0 error 0 warning；`npm run build` 成功；
 `/quote` 返回 200 含表单。
 
-## 20. 后台（Shopify Admin）前置依赖
+## 20. 已落地：Shopify Flow 集成 — 销售团队自动通知
+
+### 方案 A：Hydrogen 直接通知（推荐）
+
+| 文件 | 说明 |
+| --- | --- |
+| `app/lib/notifications.ts` | `notifyQuoteCreated()`：Slack blocks / Microsoft Teams MessageCard / 通用 JSON POST；`hasNotificationWebhook()` 检测 |
+| `app/routes/quote.tsx` action | Draft Order 创建成功后 `void notifyQuoteCreated()`（非阻塞，失败只 log） |
+| 环境变量 | `SLACK_WEBHOOK_URL` 或 `TEAMS_WEBHOOK_URL`（二选一，可选） |
+
+通知内容：Draft Order 名称 + invoice URL + 公司 + 联系人 + 邮箱 + 电话 + 项目描述 + 商品数。
+
+### 方案 B：Flow webhook 接收端点
+
+| 文件 | 说明 |
+| --- | --- |
+| `app/routes/webhooks.flow.tsx` | 接收 Shopify Flow "Send HTTP request" action 的 POST 回调，解析 Draft Order 数据，转发为 Slack/Teams 通知 |
+| `guides/b2b/crl-hydroen/Shopify-Flow集成配置指南.md` | 完整配置步骤：Slack/Teams webhook 创建、Flow 工作流 Trigger+Action 配置、环境变量清单 |
+
+Flow 工作流：
+```
+Trigger: Draft Order created (条件: note contains "website_quote_form")
+  → Action: Send HTTP request → POST https://your-domain.com/webhooks/flow
+    → Hydrogen 接收 → 发送 Slack/Teams 通知
+```
+
+**推荐**：方案 A 为主（即时、无 Plus 依赖），方案 B 为辅（Plus 用户可配置 Flow 做更多自动化）。
+
+验收：`tsc --noEmit` 无错误；`npm run lint` 0 error 0 warning；`npm run build` 成功。
+
+## 21. 后台（Shopify Admin）前置依赖
 
 规格 §68：产品、集合、导航、客户、公司/公司地点、目录、Markets、Locations，
 以及 Metaobject 定义：`Hero`、`MegaMenuItem`、`Brand`、`Resource`、`TechnicalDocument`、`Location`。

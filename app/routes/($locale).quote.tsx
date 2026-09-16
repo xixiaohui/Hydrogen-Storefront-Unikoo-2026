@@ -2,6 +2,7 @@ import {useLoaderData, useActionData, data} from 'react-router';
 import type {Route} from './+types/quote';
 import {getBuyerVariables, b2bCacheOptions} from '~/lib/b2b';
 import {hasAdminApi, createDraftOrder, type DraftOrderLineItem} from '~/lib/admin-api';
+import {notifyQuoteCreated} from '~/lib/notifications';
 import {QuoteForm} from '~/components/quote/QuoteForm';
 import {Breadcrumbs} from '~/components/Breadcrumbs';
 import {Money} from '@shopify/hydrogen';
@@ -70,6 +71,18 @@ export async function action({request, context}: Route.ActionArgs) {
           },
         ],
       });
+
+      // Notify sales team (Slack/Teams) — non-blocking, failures logged
+      void notifyQuoteCreated(context.env, {
+        draftOrderName: draftOrder.name,
+        invoiceUrl: draftOrder.invoiceUrl,
+        company,
+        contact,
+        email,
+        phone,
+        project,
+        itemCount: lineItems.length,
+      }).catch((err: Error) => console.error('Notification error:', err));
 
       return data({
         mode: 'draft_order' as const,
