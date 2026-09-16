@@ -2517,6 +2517,17 @@ button.reset:hover:not(:has(> *)) {
   padding: 0.75rem;
 }
 
+.quote-success-banner {
+  border-color: var(--color-success);
+  margin-bottom: 1.5rem;
+
+  .card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+  }
+}
+
 /* Draft orders (approval workflow) ---------------------------------- */
 .account-draft-orders {
   margin-top: 2rem;

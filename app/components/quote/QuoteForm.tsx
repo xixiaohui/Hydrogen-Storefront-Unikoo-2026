@@ -1,63 +1,94 @@
-import {useState} from 'react';
 import type {CartLine} from '~/components/CartLineItem';
 
+type ActionData =
+  | {mode: 'draft_order'; draftOrderName: string; invoiceUrl: string; message: string}
+  | {
+      mode: 'mailto';
+      company: string;
+      contact: string;
+      email: string;
+      phone: string;
+      project: string;
+      lineItems: Array<{title: string; sku: string; quantity: number}>;
+    };
+
 /**
- * Quote request form. Generates a mailto: link with the cart contents
- * and project details so the sales team receives a structured request.
- * Also offers a printable quote summary.
+ * Quote request form.
+ *
+ * Submits to the /quote action which either:
+ * 1. Creates a Draft Order via Shopify Admin API (if token configured)
+ * 2. Falls back to client-side mailto: generation (no backend dependency)
+ *
+ * When the action returns a "mailto" result, this component opens the
+ * email client with a structured body containing the cart contents.
  */
-export function QuoteForm({cartLines}: {cartLines: CartLine[]}) {
-  const [submitted, setSubmitted] = useState(false);
+export function QuoteForm({
+  cartLines,
+  actionData,
+}: {
+  cartLines: CartLine[];
+  actionData?: ActionData;
+}) {
+  // If draft order was created, the success banner is shown in the page above.
+  if (actionData?.mode === 'draft_order') return null;
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-
-    const company = String(formData.get('company') || '');
-    const contact = String(formData.get('contact') || '');
-    const email = String(formData.get('email') || '');
-    const phone = String(formData.get('phone') || '');
-    const project = String(formData.get('project') || '');
-
-    // Build the mailto body
-    const linesSummary = cartLines
-      .map((line) => {
-        const merchandise =
-          'merchandise' in line ? line.merchandise : null;
-        if (!merchandise) return '';
-        const title =
-          'product' in merchandise && merchandise.product
-            ? (merchandise.product as {title?: string}).title
-            : ('title' in merchandise ? String(merchandise.title) : '');
-        const sku =
-          'sku' in merchandise && merchandise.sku
-            ? String(merchandise.sku)
-            : '-';
-        return `${title} (SKU: ${sku}) x ${line.quantity}`;
-      })
-      .filter(Boolean)
+  // If mailto fallback returned, open email client.
+  if (actionData?.mode === 'mailto') {
+    const linesSummary = actionData.lineItems
+      .map(
+        (item) =>
+          `${item.title} (SKU: ${item.sku || '-'}) x ${item.quantity}`,
+      )
       .join('\n');
 
     const body = [
-      `Company: ${company}`,
-      `Contact: ${contact}`,
-      `Email: ${email}`,
-      `Phone: ${phone}`,
+      `Company: ${actionData.company}`,
+      `Contact: ${actionData.contact}`,
+      `Email: ${actionData.email}`,
+      `Phone: ${actionData.phone}`,
       '',
       `Project / notes:`,
-      project,
+      actionData.project,
       '',
       `Items:`,
       linesSummary,
     ].join('\n');
 
-    const subject = `Quote Request — ${company || 'B2B Customer'}`;
+    const subject = `Quote Request — ${actionData.company || 'B2B Customer'}`;
     const mailto = `mailto:sales@industrial-supply.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 
-    window.location.href = mailto;
-    setSubmitted(true);
-  };
+    // Auto-open mailto on next render
+    if (typeof window !== 'undefined') {
+      window.location.href = mailto;
+    }
 
+    return (
+      <div className="quote-form-card card">
+        <div className="card-body">
+          <h2 className="section-heading">
+            <span>Opening email client…</span>
+          </h2>
+          <p className="quote-form-success">
+            Your email client should have opened with the quote request.
+            If not, please email sales@industrial-supply.com directly with
+            your cart contents.
+          </p>
+          <a className="btn btn-primary" href={mailto}>
+            Open email
+          </a>
+          <button
+            className="btn btn-secondary"
+            onClick={() => window.print()}
+            type="button"
+          >
+            Print quote
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Default: show the form
   return (
     <div className="quote-form-card card">
       <div className="card-body">
@@ -65,14 +96,7 @@ export function QuoteForm({cartLines}: {cartLines: CartLine[]}) {
           <span>Your details</span>
         </h2>
 
-        {submitted && (
-          <p className="quote-form-success">
-            Your email client should have opened with the quote request.
-            If not, please email sales@industrial-supply.com directly.
-          </p>
-        )}
-
-        <form className="quote-form" onSubmit={handleSubmit}>
+        <form className="quote-form" method="post">
           <div className="field">
             <label className="label" htmlFor="company">
               Company name
@@ -147,7 +171,7 @@ export function QuoteForm({cartLines}: {cartLines: CartLine[]}) {
 
           <div className="quote-form-actions">
             <button className="btn btn-primary btn-lg" type="submit">
-              Send quote request
+              Submit quote request
             </button>
             <button
               className="btn btn-secondary"

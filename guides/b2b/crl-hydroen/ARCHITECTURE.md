@@ -306,7 +306,30 @@ Quote 通过 mailto: 实现，无后端依赖。
 验收：`codegen` + `typegen` + `tsc --noEmit` 无错误；`npm run lint` 0 error 0 warning；
 `npm run build` 成功；`/quote` 返回 200 含表单与购物车摘要。
 
-## 19. 后台（Shopify Admin）前置依赖
+## 19. 已落地：Quote 升级 — Admin API Draft Order 自动创建
+
+| 文件 | 说明 |
+| --- | --- |
+| `app/lib/admin-api.ts` | Shopify Admin API 封装：`hasAdminApi()` 检测 token；`createDraftOrder()` 调用 `draftOrderCreate` mutation（lineItems/email/note/metafields/buyerIdentity） |
+| `app/routes/quote.tsx`（+ `($locale)` 副本） | action 解析表单 → 从购物车收集 variant IDs → 有 Admin token 则调 `createDraftOrder` → 返回 invoice URL；失败或无 token 降级为 mailto: 数据 |
+| `app/components/quote/QuoteForm.tsx` | 三态渲染：① 默认表单 → ② Draft Order 成功（页面上方 banner 显示 invoice URL）→ ③ mailto 降级（自动打开邮件客户端 + 打印按钮） |
+| `env.d.ts` | 声明 `SHOPIFY_ADMIN_API_TOKEN` 环境变量 |
+| `app/styles/app.css` | 成功 banner 样式 |
+
+**工作流**：
+1. 客户在 `/quote` 填表 + 提交
+2. 服务端 action 获取购物车 → 调用 Admin API `draftOrderCreate`（含 B2B buyerIdentity）
+3. 成功 → 返回 Draft Order 名称 + invoice URL，页面显示成功 banner + "View invoice" 按钮
+4. 失败/无 token → 降级为 mailto:（客户端打开邮件，无后端依赖）
+
+**环境变量**：
+- `SHOPIFY_ADMIN_API_TOKEN`（服务端，scope: `draft_orders[write]`）
+- 未配置时自动降级，不影响用户体验
+
+验收：`tsc --noEmit` 无错误；`npm run lint` 0 error 0 warning；`npm run build` 成功；
+`/quote` 返回 200 含表单。
+
+## 20. 后台（Shopify Admin）前置依赖
 
 规格 §68：产品、集合、导航、客户、公司/公司地点、目录、Markets、Locations，
 以及 Metaobject 定义：`Hero`、`MegaMenuItem`、`Brand`、`Resource`、`TechnicalDocument`、`Location`。
