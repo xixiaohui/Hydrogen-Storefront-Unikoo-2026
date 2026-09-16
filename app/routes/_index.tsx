@@ -6,6 +6,7 @@ import type {
   CollectionFragment,
 } from 'storefrontapi.generated';
 import {b2bCacheOptions, getBuyerVariables} from '~/lib/b2b';
+import {logger} from '~/lib/logger';
 import {Hero} from '~/components/home/Hero';
 import {CategoryNav} from '~/components/home/CategoryNav';
 import {FeaturedProducts} from '~/components/home/FeaturedProducts';
@@ -68,7 +69,7 @@ function loadDeferredData({context}: Route.LoaderArgs) {
       }),
     )
     .catch((error: Error) => {
-      console.error(error);
+      logger.warn('Recommended products query failed', undefined, error);
       return null;
     });
 

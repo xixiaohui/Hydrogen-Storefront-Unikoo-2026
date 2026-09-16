@@ -6,6 +6,7 @@ import {
   type HydrogenRouterContextProvider,
 } from '@shopify/hydrogen';
 import type {EntryContext} from 'react-router';
+import {logger} from '~/lib/logger';
 
 export default async function handleRequest(
   request: Request,
@@ -33,7 +34,7 @@ export default async function handleRequest(
       nonce,
       signal: request.signal,
       onError(error) {
-        console.error(error);
+        logger.error('SSR render error', {path: request.url}, error);
         responseStatusCode = 500;
       },
     },

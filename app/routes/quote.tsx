@@ -3,6 +3,7 @@ import type {Route} from './+types/quote';
 import {getBuyerVariables} from '~/lib/b2b';
 import {hasAdminApi, createDraftOrder, type DraftOrderLineItem} from '~/lib/admin-api';
 import {notifyQuoteCreated} from '~/lib/notifications';
+import {logger} from '~/lib/logger';
 import {QuoteForm} from '~/components/quote/QuoteForm';
 import {Breadcrumbs} from '~/components/Breadcrumbs';
 import {Money} from '@shopify/hydrogen';
@@ -86,7 +87,9 @@ export async function action({request, context}: Route.ActionArgs) {
         phone,
         project,
         itemCount: lineItems.length,
-      }).catch((err: Error) => console.error('Notification error:', err));
+      }).catch((err: Error) =>
+        logger.error('Quote notification failed', {draftOrderName: draftOrder.name}, err),
+      );
 
       return data({
         mode: 'draft_order' as const,
@@ -96,7 +99,11 @@ export async function action({request, context}: Route.ActionArgs) {
       });
     } catch (error: unknown) {
       // Log error but fall back to mailto mode
-      console.error('Draft order creation failed:', error);
+      logger.error(
+        'Draft order creation failed, falling back to mailto',
+        {company, email},
+        error,
+      );
     }
   }
 

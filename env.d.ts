@@ -21,4 +21,7 @@ interface Env {
   SLACK_WEBHOOK_URL?: string;
   TEAMS_WEBHOOK_URL?: string;
   SHOPIFY_WEBHOOK_SECRET?: string;
+
+  // Error tracking (optional)
+  SENTRY_DSN?: string;
 }

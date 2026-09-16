@@ -17,6 +17,7 @@ import resetStyles from '~/styles/reset.css?url';
 import tailwindStyles from '~/styles/tailwind.css?url';
 import appStyles from '~/styles/app.css?url';
 import {PageLayout} from './components/PageLayout';
+import {logger} from '~/lib/logger';
 // @description Import B2B components and types for company location management
 import {B2BLocationProvider} from '~/components/B2BLocationProvider';
 import type {
@@ -188,7 +189,7 @@ function loadDeferredData({context}: Route.LoaderArgs) {
     })
     .catch((error: Error) => {
       // Log query errors, but don't throw them so the page can still render
-      console.error(error);
+      logger.warn('Footer query failed', undefined, error);
       return null;
     });
   return {
@@ -255,6 +256,12 @@ export function ErrorBoundary() {
   } else if (error instanceof Error) {
     errorMessage = error.message;
   }
+
+  // Report to structured logger
+  logger.error('Route error boundary rendered', {
+    status: errorStatus,
+    error: errorMessage,
+  });
 
   return (
     <div className="route-error">

@@ -388,7 +388,25 @@ Trigger: Draft Order created (条件: note contains "website_quote_form")
 验收：`tsc --noEmit` 无错误；`npm run lint` 0 error 0 warning；`npm run build` 成功；
 冒烟：`/`、`/quote`、`/search?q=glass`、`/quick-order` 全部 200。
 
-## 22. 后台（Shopify Admin）前置依赖
+## 22. 已落地：监控与错误追踪
+
+| 文件 | 说明 |
+| --- | --- |
+| `app/lib/logger.ts` | 结构化 JSON 日志：level/timestamp/message/context/error，单 console 封装 |
+| `app/lib/error-tracking.ts` | `captureError()`：有 `SENTRY_DSN` 时通过 HTTP store endpoint 上报 Sentry（零依赖），无 DSN 降级为结构化日志；`hasErrorTracking()` |
+| `server.ts` | 全局 catch 接入 `captureError` |
+| `entry.server.tsx` | SSR `onError` 接入 `logger.error` |
+| `root.tsx` | ErrorBoundary + footer 查询失败接入 logger |
+| `quote.tsx` / `notifications.ts` / `products.$handle.tsx` / `_index.tsx` | 错误/降级路径 `console.error` → 结构化 `logger` |
+| `env.d.ts` / `.env.example` | 新增 `SENTRY_DSN` |
+| `guides/.../监控与错误追踪配置指南.md` | 完整配置指南（Sentry 项目创建、日志级别约定、覆盖范围） |
+
+**设计原则**：零额外依赖（手动 HTTP 上报，不装 SDK）；无 DSN 优雅降级；日志统一 JSON 格式。
+
+验收：`tsc --noEmit` 无错误；`npm run lint` 0 error 0 warning；`npm run build` 成功；
+冒烟：`/`、`/quote`、`/collections/all` 全部 200。
+
+## 23. 后台（Shopify Admin）前置依赖
 
 规格 §68：产品、集合、导航、客户、公司/公司地点、目录、Markets、Locations，
 以及 Metaobject 定义：`Hero`、`MegaMenuItem`、`Brand`、`Resource`、`TechnicalDocument`、`Location`。

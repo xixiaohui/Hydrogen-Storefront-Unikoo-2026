@@ -13,6 +13,7 @@ import {ProductForm} from '~/components/ProductForm';
 import {redirectIfHandleIsLocalized} from '~/lib/redirect';
 import type {BuyerVariables} from '~/lib/b2b';
 import {b2bCacheOptions, getBuyerVariables} from '~/lib/b2b';
+import {logger} from '~/lib/logger';
 import {QuantityRules, hasQuantityRules} from '~/components/QuantityRules';
 import {PriceBreaks} from '~/components/PriceBreaks';
 import {Breadcrumbs} from '~/components/Breadcrumbs';
@@ -109,7 +110,7 @@ function loadDeferredData({
           ...b2bCacheOptions(storefront, buyerVariables),
         })
         .catch((err: Error) => {
-          console.error('Recommendations error:', err);
+          logger.warn('Product recommendations query failed', undefined, err);
           return null;
         })
     : Promise.resolve(null);

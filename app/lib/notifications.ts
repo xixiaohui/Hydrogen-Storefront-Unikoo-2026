@@ -7,6 +7,8 @@
  * the notification is silently skipped.
  */
 
+import {logger} from '~/lib/logger';
+
 type QuoteNotification = {
   draftOrderName: string;
   invoiceUrl: string;
@@ -54,7 +56,7 @@ export async function notifyQuoteCreated(
     }
     return true;
   } catch (error) {
-    console.error('Notification failed:', error);
+    logger.warn('Notification failed', {draftOrderName: data.draftOrderName}, error);
     return false;
   }
 }

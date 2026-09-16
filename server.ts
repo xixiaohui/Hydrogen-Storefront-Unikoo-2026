@@ -1,6 +1,7 @@
 import * as serverBuild from 'virtual:react-router/server-build';
 import {createRequestHandler, storefrontRedirect} from '@shopify/hydrogen';
 import {createHydrogenRouterContext} from '~/lib/context';
+import {captureError} from '~/lib/error-tracking';
 
 /**
  * Export a fetch handler in module format.
@@ -52,7 +53,11 @@ export default {
 
       return response;
     } catch (error) {
-      console.error(error);
+      // Report to Sentry (if configured) and structured logger
+      void captureError(env as unknown as Record<string, unknown>, error, {
+        message: 'Unhandled server error',
+        extra: {path: request.url},
+      });
       return new Response('An unexpected error occurred', {status: 500});
     }
   },
